@@ -1,0 +1,7 @@
+== etiqueta: hyperv   anfitriao: 172.28.176.1   N=10   T=10s   data: 2026-10-23T14:01:55+00:00   (UDP)
+== driver (eth0)
+/sys/bus/vmbus/drivers/hv_netvsc
+== MTU
+1500
+== versoes
+iperf 3.20 (cJSON 1.7.15)

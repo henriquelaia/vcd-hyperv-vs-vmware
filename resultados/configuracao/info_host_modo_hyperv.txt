@@ -1,0 +1,255 @@
+== CPU
+
+
+Name                          : Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz
+NumberOfCores                 : 4
+NumberOfLogicalProcessors     : 8
+MaxClockSpeed                 : 2400
+VirtualizationFirmwareEnabled : False
+
+
+
+== RAM
+
+Manufacturer PartNumber             Capacity Speed ConfiguredClockSpeed
+------------ ----------             -------- ----- --------------------
+Samsung      M471A1K43CB1-CTD     8589934592  2667                 2667
+Samsung      M471A1K43CB1-CTD     8589934592  2667                 2667
+
+
+== Discos
+
+FriendlyName               MediaType BusType          Size
+------------               --------- -------          ----
+SAMSUNG MZVLB1T0HALR-000H1 SSD       NVMe    1024209543168
+
+
+== Volumes
+
+DriveLetter FileSystem          Size SizeRemaining
+----------- ----------          ---- -------------
+          C NTFS       1022837293056  525033615360
+
+
+== Windows
+
+
+WindowsProductName                             : Windows 10 Home
+WindowsVersion                                 : 2009
+OsBuildNumber                                  : 26200
+HyperVisorPresent                              : True
+HyperVRequirementVirtualizationFirmwareEnabled : 
+
+
+
+== Funcionalidade Hyper-V
+
+FeatureName              State
+-----------              -----
+Microsoft-Hyper-V-All  Enabled
+== Plataforma de Hipervisor do Windows
+HypervisorPlatform    Disabled
+== bcdedit (hypervisorlaunchtype)
+                              
+== VBS / Integridade de Memoria
+
+
+
+
+VirtualizationBasedSecurityStatus : 2
+SecurityServicesConfigured        : {0}
+SecurityServicesRunning           : {0}
+
+
+
+== Plano de energia
+Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (Elevado desempenho)
+== Bateria (portatil?)
+
+Name    BatteryStatus
+----    -------------
+Primary             2
+== Exclusoes Defender
+C:\ProgramData\Microsoft\Windows\Virtual Hard Disks
+C:\Users\alexm\Documentos\Virtual Machines
+== Tipo de escalonador do Hyper-V (0x2 classic, 0x3 core, 0x4 root)
+
+
+
+
+TimeCreated : 17/10/2026 22:24:57
+Message     : O tipo de agendador do hipervisor é 0x4.
+
+
+
+== Hyper-V: VMs
+
+
+Name                 : VM-Tipo1-HyperV
+State                : Off
+Generation           : 2
+Version              : 12.0
+ProcessorCount       : 2
+MemoryStartup        : 4294967296
+DynamicMemoryEnabled : False
+
+
+
+
+
+VMName                           : VM-Tipo1-HyperV
+Count                            : 2
+Reserve                          : 0
+Maximum                          : 100
+RelativeWeight                   : 100
+CompatibilityForMigrationEnabled : False
+
+
+
+
+
+VMName         : VM-Tipo1-HyperV
+ControllerType : SCSI
+Path           : C:\ProgramData\Microsoft\Windows\Virtual Hard Disks\VM-Tipo1-HyperV.vhdx
+
+
+
+
+
+Path               : C:\ProgramData\Microsoft\Windows\Virtual Hard Disks\VM-Tipo1-HyperV.vhdx
+VhdFormat          : VHDX
+VhdType            : Dynamic
+Size               : 26843545600
+FileSize           : 11580473344
+LogicalSectorSize  : 512
+PhysicalSectorSize : 4096
+
+
+
+== VMware: ficheiro .vmx
+.encoding = "windows-1252"
+config.version = "8"
+virtualHW.version = "21"
+mks.enable3d = "TRUE"
+pciBridge0.present = "TRUE"
+pciBridge4.present = "TRUE"
+pciBridge4.virtualDev = "pcieRootPort"
+pciBridge4.functions = "8"
+pciBridge5.present = "TRUE"
+pciBridge5.virtualDev = "pcieRootPort"
+pciBridge5.functions = "8"
+pciBridge6.present = "TRUE"
+pciBridge6.virtualDev = "pcieRootPort"
+pciBridge6.functions = "8"
+pciBridge7.present = "TRUE"
+pciBridge7.virtualDev = "pcieRootPort"
+pciBridge7.functions = "8"
+vmci0.present = "TRUE"
+hpet0.present = "TRUE"
+nvram = "VM-Tipo2-VMware.nvram"
+virtualHW.productCompatibility = "hosted"
+powerType.powerOff = "soft"
+powerType.powerOn = "soft"
+powerType.suspend = "soft"
+powerType.reset = "soft"
+displayName = "VM-Tipo2-VMware"
+guestOS = "ubuntu-64"
+tools.syncTime = "FALSE"
+sound.autoDetect = "TRUE"
+sound.fileName = "-1"
+sound.present = "TRUE"
+numvcpus = "2"
+cpuid.coresPerSocket = "1"
+vcpu.hotadd = "TRUE"
+memsize = "4096"
+mem.hotadd = "TRUE"
+scsi0.virtualDev = "lsilogic"
+scsi0.present = "TRUE"
+sata0.present = "TRUE"
+scsi0:0.fileName = "VM-Tipo2-VMware.vmdk"
+scsi0:0.present = "TRUE"
+sata0:1.deviceType = "cdrom-image"
+sata0:1.fileName = "C:\Users\alexm\Downloads\ubuntu-26.04.1-live-server-amd64.iso"
+sata0:1.present = "TRUE"
+usb.present = "TRUE"
+ehci.present = "TRUE"
+svga.graphicsMemoryKB = "8388608"
+ethernet0.connectionType = "nat"
+ethernet0.addressType = "generated"
+ethernet0.virtualDev = "e1000"
+ethernet0.present = "TRUE"
+extendedConfigFile = "VM-Tipo2-VMware.vmxf"
+floppy0.present = "FALSE"
+vmxstats.filename = "VM-Tipo2-VMware.scoreboard"
+uuid.bios = "56 4d 76 4f 5e 57 37 ce-e5 37 19 bc e3 03 ae 8a"
+uuid.location = "56 4d 76 4f 5e 57 37 ce-e5 37 19 bc e3 03 ae 8a"
+pciBridge0.pciSlotNumber = "17"
+pciBridge4.pciSlotNumber = "21"
+pciBridge5.pciSlotNumber = "22"
+pciBridge6.pciSlotNumber = "23"
+pciBridge7.pciSlotNumber = "24"
+scsi0.pciSlotNumber = "16"
+usb.pciSlotNumber = "32"
+ethernet0.pciSlotNumber = "33"
+sound.pciSlotNumber = "34"
+ehci.pciSlotNumber = "35"
+sata0.pciSlotNumber = "36"
+scsi0:0.redo = ""
+svga.vramSize = "268435456"
+vmotion.checkpointFBSize = "4194304"
+vmotion.checkpointSVGAPrimarySize = "268435456"
+vmotion.svga.mobMaxSize = "1073741824"
+vmotion.svga.graphicsMemoryKB = "8388608"
+vmotion.svga.supports3D = "1"
+vmotion.svga.baseCapsLevel = "9"
+vmotion.svga.maxPointSize = "189"
+vmotion.svga.maxTextureSize = "32768"
+vmotion.svga.maxVolumeExtent = "16384"
+vmotion.svga.maxTextureAnisotropy = "16"
+vmotion.svga.lineStipple = "1"
+vmotion.svga.dxMaxConstantBuffers = "15"
+vmotion.svga.dxProvokingVertex = "1"
+vmotion.svga.sm41 = "1"
+vmotion.svga.multisample2x = "1"
+vmotion.svga.multisample4x = "1"
+vmotion.svga.msFullQuality = "1"
+vmotion.svga.logicOps = "1"
+vmotion.svga.bc67 = "9"
+vmotion.svga.sm5 = "1"
+vmotion.svga.multisample8x = "1"
+vmotion.svga.logicBlendOps = "1"
+vmotion.svga.maxForcedSampleCount = "16"
+vmotion.svga.gl43 = "1"
+ethernet0.generatedAddress = "00:0c:29:03:ae:8a"
+ethernet0.generatedAddressOffset = "0"
+vmci0.id = "-486297974"
+monitor.phys_bits_used = "45"
+cleanShutdown = "TRUE"
+softPowerOff = "FALSE"
+usb:1.speed = "2"
+usb:1.present = "TRUE"
+usb:1.deviceType = "hub"
+usb:1.port = "1"
+usb:1.parent = "-1"
+tools.capability.verifiedSamlToken = "TRUE"
+svga.guestBackedPrimaryAware = "TRUE"
+guestInfo.detailed.data = "architecture='X86' bitness='64' distroAddlVersion='26.04.1 LTS (Resolute Raccoon)' distroName='Ubuntu' distroVersion='26.04' familyName='Linux' kernelVersion='7.0.0-38-generic' prettyName='Ubuntu 26.04.1 LTS'"
+usb:0.present = "TRUE"
+usb:0.deviceType = "hid"
+usb:0.port = "0"
+usb:0.parent = "-1"
+<?xml version="1.0"?>
+<Foundry>
+<VM>
+<VMId type="string">52 16 66 0f ac 4f 3e b9-f2 d7 b2 02 69 7a 49 d3</VMId>
+<ClientMetaData>
+<clientMetaDataAttributes/>
+<HistoryEventList/></ClientMetaData>
+<vmxPathName type="string">VM-Tipo2-VMware.vmx</vmxPathName></VM></Foundry>
+== VMware: descritores .vmdk (tipo de disco)
+
+Name                     Length
+----                     ------
+VM-Tipo2-VMware.vmdk 8993964032
+
+

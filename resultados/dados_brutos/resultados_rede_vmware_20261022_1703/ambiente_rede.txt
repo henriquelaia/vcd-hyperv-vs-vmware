@@ -1,0 +1,16 @@
+== etiqueta: vmware   anfitriao: 192.168.59.1   N=10   T=10s   data: 2026-10-22T17:04:08+00:00
+== interfaces
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+ens33            UP             192.168.59.134/24 metric 100 fe80::20c:29ff:fe03:ae8a/64 
+== rotas
+default via 192.168.59.2 dev ens33 proto dhcp src 192.168.59.134 metric 100 
+192.168.59.0/24 dev ens33 proto kernel scope link src 192.168.59.134 metric 100 
+192.168.59.2 dev ens33 proto dhcp scope link src 192.168.59.134 metric 100 
+== driver (ens33)
+/sys/bus/pci/drivers/e1000
+== modulos rede
+e1000                 188416  0
+== MTU
+1500
+== versoes
+iperf 3.20 (cJSON 1.7.15)

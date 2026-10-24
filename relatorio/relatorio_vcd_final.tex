@@ -1,0 +1,480 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[portuguese]{babel}
+\usepackage{icomma}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.16}
+\usepackage{url}
+
+\renewcommand\IEEEkeywordsname{Palavras-chave}
+
+% Campos que o grupo tem de preencher (a vermelho). Procurar "\pendente".
+\newcommand{\pendente}[1]{\textcolor{red}{\textbf{#1}}}
+
+\definecolor{tipoum}{RGB}{31,94,153}
+\definecolor{tipocore}{RGB}{120,160,205}
+\definecolor{tipodois}{RGB}{214,110,30}
+
+\begin{document}
+
+\title{Hyper-V vs.\ VMware: Overhead da Virtualização\\
+\thanks{Trabalho realizado no âmbito da Unidade Curricular de Virtualização e Centros de Dados, Departamento de Informática, Universidade da Beira Interior.}
+}
+
+\author{
+\IEEEauthorblockN{Henrique Laia (M16491)}
+\IEEEauthorblockA{\textit{Departamento de Informática}\\
+\textit{Universidade da Beira Interior}\\
+Covilhã, Portugal\\
+m16491@ubi.pt}
+\and
+\IEEEauthorblockN{Alexandre Santos (\pendente{n.º})}
+\IEEEauthorblockA{\textit{Departamento de Informática}\\
+\textit{Universidade da Beira Interior}\\
+Covilhã, Portugal\\
+\pendente{número}@ubi.pt}
+\and
+\IEEEauthorblockN{Daniel Basílio (\pendente{n.º})}
+\IEEEauthorblockA{\textit{Departamento de Informática}\\
+\textit{Universidade da Beira Interior}\\
+Covilhã, Portugal\\
+\pendente{número}@ubi.pt}
+}
+
+\maketitle
+
+% =================================================================== RESUMO
+\begin{abstract}
+Este artigo compara um hipervisor nativo (Hyper-V) com um hipervisor baseado em anfitrião (VMware Workstation~17.6) no mesmo portátil, com convidados Ubuntu Server~26.04 idênticos ($N=10$, teste~$t$ de Welch). O processador e a memória sequencial não diferem significativamente, mas o acesso aleatório à memória é 27\% mais lento no Tipo~2. No armazenamento, o Tipo~2 é mais rápido com fila unitária, graças à \textit{cache} do anfitrião, mas perde 88\% de IOPS com 32 pedidos em fila e 25--52\% de débito sequencial. Na rede, perde 33--66\% de débito.
+\end{abstract}
+
+\begin{IEEEkeywords}
+virtualização, Hyper-V, VMware Workstation, hipervisor Tipo~1, hipervisor Tipo~2, overhead, E/S
+\end{IEEEkeywords}
+
+% =============================================================== INTRODUÇÃO
+\section{Introdução}
+A virtualização é a base dos centros de dados e da computação em nuvem: permite consolidar vários sistemas isolados num único servidor físico, melhorando a utilização do hardware e simplificando a gestão~\cite{b3,b4}. O componente que o torna possível, o hipervisor, interpõe-se entre o hardware e os sistemas convidados e decide como cada instrução privilegiada, interrupção ou pedido de Entrada/Saída (E/S) chega ao hardware. A sua arquitetura condiciona, por isso, o desempenho e a previsibilidade dos serviços alojados.
+
+Na taxonomia clássica~\cite{b7,b4}, um hipervisor de Tipo~1 (nativo ou \textit{bare-metal}) executa diretamente sobre o hardware, enquanto um de Tipo~2 (\textit{host-based}) executa como aplicação sobre um sistema operativo anfitrião. É comum assumir-se que o Tipo~2 é sempre mais lento. Contudo, as extensões de virtualização assistida por hardware tornaram quase nativo o custo de executar código~\cite{b9,b10}, e o Tipo~2 pode beneficiar de mecanismos do anfitrião, como a \textit{cache} de ficheiros. A questão relevante é, assim, \textit{onde} está o \textit{overhead} e em que condições se manifesta.
+
+Este trabalho instala e configura, em \textit{single node}, o Microsoft Hyper-V~\cite{b1} e o VMware Workstation~\cite{b2} no mesmo equipamento, e quantifica o \textit{overhead} relativo nos quatro subsistemas: processador, memória, armazenamento e rede. As contribuições são: (i)~uma comparação controlada, com recursos e topologia de vCPU equivalentes, verificação explícita do modo de execução de cada hipervisor e análise de significância estatística; (ii)~a identificação de dois regimes opostos no armazenamento, explicados pela lei de Little~\cite{b14}; e (iii)~uma experiência que avalia o efeito do escalonador do Hyper-V.
+
+O artigo organiza-se da seguinte forma: a Secção~II apresenta o enquadramento e os trabalhos relacionados; a Secção~III descreve a arquitetura e os métodos; a Secção~IV, a configuração experimental; a Secção~V apresenta e discute os resultados; a Secção~VI identifica as limitações; e a Secção~VII conclui.
+
+% =============================================================== BACKGROUND
+\section{Background e Trabalhos Relacionados}
+
+\subsection{Virtualização x86 Assistida por Hardware}
+Popek e Goldberg~\cite{b7} estabeleceram que uma arquitetura é virtualizável se todas as instruções sensíveis forem privilegiadas, condição que o x86 original não cumpria. Isto levou primeiro à tradução binária~\cite{b9} e à paravirtualização, como no Xen~\cite{b8}. As extensões Intel VT-x e AMD-V acrescentaram um modo de execução para o hipervisor, e as tabelas de páginas de segundo nível (EPT/NPT) passaram a traduzir em hardware os endereços do convidado~\cite{b10}. Esta tradução tem, porém, um custo: uma falha de TLB obriga a percorrer as tabelas do convidado e as do hipervisor, um percurso bidimensional que pode exigir até 24 acessos à memória com páginas de 4~KiB e que é muito mais curto quando o hipervisor usa páginas grandes (2~MiB)~\cite{b10}. O restante custo concentra-se nas saídas para o hipervisor (\textit{VM exits}), sobretudo no acesso a dispositivos.
+
+Os dispositivos virtuais podem ser \textit{emulados}, imitando hardware real (por exemplo, a placa de rede Intel \texttt{e1000} ou o controlador SCSI LSI Logic), o que obriga a uma saída para o hipervisor em cada acesso a registos; ou \textit{paravirtualizados}, com controladores que sabem estar virtualizados e trocam pedidos em lote por memória partilhada~\cite{b8,b9}.
+
+\subsection{Hipervisor Nativo: Microsoft Hyper-V}
+No Hyper-V, o hipervisor (\texttt{hvix64}/\texttt{hvax64}) é carregado no arranque, antes do Windows, que passa a executar como \textit{partição raiz}. As máquinas convidadas executam em \textit{partições filhas} e usam dispositivos paravirtualizados: os controladores do convidado (VSC, como \texttt{hv\_storvsc} e \texttt{hv\_netvsc}) enviam pedidos pelo barramento \textit{VMBus} aos fornecedores de serviço (VSP) da partição raiz, em modo núcleo~\cite{b1}. Tanto no Windows Server como no Windows~11, o Hyper-V é um hipervisor de Tipo~1. As edições diferem nas funcionalidades de centro de dados (\textit{Failover Clustering}, Hyper-V Replica) e no escalonador predefinido: \textit{root} nas edições cliente, \textit{classic} no Windows Server~2016 e \textit{core} a partir do 2019~\cite{b11}. No \textit{root scheduler}, os vCPU são escalonados pelo próprio Windows como \textit{threads}. No \textit{core scheduler}, o hipervisor atribui núcleos físicos inteiros a cada máquina, nunca partilhando os \textit{threads} SMT de um núcleo entre máquinas diferentes, por isolamento de segurança~\cite{b11}.
+
+\subsection{Hipervisor Baseado em Anfitrião: VMware Workstation}
+O VMware Workstation instala um monitor (VMM) e um controlador no núcleo do Windows, mas a emulação de dispositivos e o acesso ao ficheiro de disco virtual (\texttt{.vmdk}) são feitos pelo processo \texttt{vmware-vmx}, em modo utilizador~\cite{b2,b9}. Assim, a E/S do convidado chega ao NTFS através da API do Windows e pode ser servida pela \textit{cache} de ficheiros do anfitrião. A memória do convidado é, ela própria, memória do processo \texttt{vmware-vmx}, gerida pelo Windows. Quando o hipervisor do Windows está ativo (funcionalidade Hyper-V, segurança baseada em virtualização ou WSL2), o VMware não pode usar o seu monitor nativo (modo \texttt{CPL0}) e executa sobre a \textit{Windows Hypervisor Platform} (modo \texttt{ULM})~\cite{b12}: nesse caso, já não se trata de um Tipo~2 ``puro''.
+
+\subsection{Trabalhos Relacionados}
+Adams e Agesen~\cite{b9} mostraram que as primeiras gerações de VT-x eram, em certas cargas, mais lentas do que a tradução binária, situação revertida com EPT/NPT~\cite{b10}. Barham \textit{et~al.}~\cite{b8} quantificaram o custo da paravirtualização no Xen, e Felter \textit{et~al.}~\cite{b13} reportaram \textit{overheads} de processador e memória desprezáveis em KVM, com a penalização concentrada na E/S. Na Universidade da Beira Interior, Louro~\cite{b3} comparou uma infraestrutura de elevada disponibilidade com Hyper-V e outra com contentores Docker, usando o IOzone (sistema de ficheiros), o RAMspeed (memória), o iPerf3 (rede) e o Geekbench (processador), em três ambientes por infraestrutura (nativo, virtualizado e aninhado), sem indicar o número de repetições nem a dispersão dos resultados. Este trabalho avalia os mesmos subsistemas, mas com ferramentas abertas e parametrizáveis, cujos resultados se exprimem em unidades físicas: \texttt{sysbench}~\cite{b5} para o processador e a memória, \texttt{fio}~\cite{b6} para o disco, com E/S direta e várias profundidades de fila, e \texttt{iperf3} para a rede. Acrescenta ainda repetições e análise estatística.
+
+% ================================================================ MÉTODOS
+\section{Arquitetura e Métodos}
+
+\subsection{Arquitetura dos Cenários}
+A Fig.~\ref{fig_arq} mostra as duas pilhas ensaiadas. No Tipo~1, os pedidos de disco e de rede do convidado seguem por controladores paravirtualizados até à partição raiz, tratados em modo núcleo. No Tipo~2, chegam a dispositivos emulados (LSI Logic e \texttt{e1000}, a configuração predefinida da máquina) que o processo \texttt{vmware-vmx} traduz em operações sobre ficheiros e sobre o adaptador virtual \texttt{VMnet8} do anfitrião.
+
+\begin{figure}[t]
+\centering
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[
+  font=\scriptsize,
+  box/.style={draw, rounded corners=1.5pt, minimum height=5mm, align=center, inner sep=1.5pt},
+  wide/.style={box, minimum width=37mm, text width=35mm},
+  half/.style={box, minimum width=18mm, text width=16mm, minimum height=13mm, font=\tiny},
+]
+\node[wide, fill=gray!20] (hw1) at (0,0) {Hardware (i5-9300H, 16 GB, NVMe)};
+\node[wide, fill=tipoum!30, above=1.2mm of hw1] (hyp) {Hipervisor Hyper-V};
+\node[wide, fill=tipoum!10, minimum height=3.5mm, font=\tiny, above=1.2mm of hyp] (bus) {VMBus (memória partilhada)};
+\node[half, fill=tipoum!10, above=1.2mm of bus.north west, anchor=south west] (root)
+  {Partição raiz\\Windows 11\\StorVSP, VMSwitch\\VHDX $\rightarrow$ NTFS};
+\node[half, fill=green!12, above=1.2mm of bus.north east, anchor=south east] (child)
+  {Partição filha\\Ubuntu 26.04\\\texttt{hv\_storvsc}\\\texttt{hv\_netvsc}};
+\node[above=0.8mm of bus.north, yshift=13mm, font=\footnotesize\bfseries, anchor=south] {Tipo 1 (nativo)};
+\node[wide, fill=gray!20] (hw2) at (4.15,0) {Hardware (i5-9300H, 16 GB, NVMe)};
+\node[wide, fill=tipodois!20, above=1.2mm of hw2] (os) {Windows 11: NTFS + \textit{cache}, VMnet8};
+\node[wide, fill=tipodois!40, above=1.2mm of os, minimum height=3.5mm, font=\tiny] (vmx) {\texttt{vmware-vmx} (modo utilizador) + VMM (CPL0)};
+\node[wide, fill=green!12, minimum height=13mm, above=1.2mm of vmx, font=\tiny] (g2) {Ubuntu 26.04 (convidado)\\LSI Logic (emulado)\\\texttt{e1000} (emulada)};
+\node[above=0.8mm of g2, font=\footnotesize\bfseries] {Tipo 2 (\textit{host-based})};
+\end{tikzpicture}}
+\caption{Pilhas de software dos dois cenários e respetivos dispositivos virtuais.}
+\label{fig_arq}
+\end{figure}
+
+\subsection{Formulação Estatística}
+Cada métrica foi medida em $N=10$ repetições. Calcula-se a média $\mu$, o desvio-padrão amostral corrigido
+\begin{equation}
+\sigma=\sqrt{\tfrac{1}{N-1}\textstyle\sum_{i=1}^{N}(x_i-\mu)^2},
+\label{eq_sd}
+\end{equation}
+e o intervalo de confiança a 95\%, $\mu\pm t_{0{,}975;9}\,\sigma/\sqrt{N}$, com $t_{0{,}975;9}=2{,}262$. As diferenças entre cenários são avaliadas com o teste~$t$ de Welch (variâncias desiguais), considerando-se significativas para $p<0{,}05$.
+
+\subsection{Quantificação do Overhead}
+Com o Hyper-V como referência, a variação relativa do Tipo~2 é
+\begin{equation}
+\Delta\% = \frac{\mu_{\mathrm{Tipo\,2}}-\mu_{\mathrm{Tipo\,1}}}{\mu_{\mathrm{Tipo\,1}}}\times 100 .
+\label{eq_delta}
+\end{equation}
+Em métricas de débito (eps, MiB/s, IOPS, Mbit/s), $\Delta\%<0$ indica pior desempenho do Tipo~2; em métricas de latência, $\Delta\%>0$ indica pior desempenho.
+
+\subsection{Modelo de Filas para o Armazenamento}
+Pela lei de Little~\cite{b14}, num sistema em regime estacionário com $Q$ pedidos em curso e latência média $\bar{L}$, o débito é
+\begin{equation}
+\mathrm{IOPS} = \frac{Q}{\bar{L}} .
+\label{eq_little}
+\end{equation}
+Se um caminho de E/S consegue servir pedidos em paralelo, aumentar $Q$ aumenta os IOPS com pouco acréscimo de $\bar{L}$. Se o caminho estiver saturado, os IOPS estabilizam e $\bar{L}$ cresce proporcionalmente a $Q$. Este modelo permite distinguir entre um caminho \textit{lento} e um caminho \textit{serializado}.
+
+% ========================================================== CONFIGURAÇÃO
+\section{Configuração Experimental}
+
+\subsection{Sistema Anfitrião e Máquinas Virtuais}
+Os dois cenários foram executados no mesmo portátil (Tabela~\ref{tab_host}), com Windows~11 Home~25H2 (\textit{build} 26200). A Tabela~\ref{tab_vm} resume as máquinas virtuais: recursos iguais e o mesmo sistema convidado, com o \textit{kernel} e as versões das ferramentas confirmados como idênticos nos dois cenários.
+
+\begin{table}[t]
+\caption{Sistema Anfitrião}
+\label{tab_host}
+\centering
+\footnotesize
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Componente} & \textbf{Especificação} \\
+\midrule
+Processador & Intel Core i5-9300H, 4 núcleos / 8 \textit{threads}, 2,4 GHz \\
+Memória & 16 GB DDR4-2666 (2 $\times$ 8 GB) \\
+Armazenamento & SSD NVMe Samsung PM981 (MZVLB1T0), 1 TB \\
+Sistema operativo & Windows 11 Home 25H2, \textit{build} 26200 \\
+Energia & Plano ``Elevado desempenho'', ligado à corrente \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\caption{Configuração das Máquinas Virtuais}
+\label{tab_vm}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Parâmetro} & \textbf{Hyper-V (Tipo 1)} & \textbf{VMware (Tipo 2)} \\
+\midrule
+Versão & config. VM 12.0, Geração 2 & Workstation 17.6.4, HW v21 \\
+Convidado & \multicolumn{2}{l}{Ubuntu Server 26.04.1 LTS, \textit{kernel} 7.0.0-38} \\
+vCPU & 2, sem SMT (1 \textit{socket} $\times$ 2) & 2, sem SMT (2 \textit{sockets} $\times$ 1) \\
+Memória & 4096 MB (fixa) & 4096 MB \\
+Disco (25 GB) & \texttt{.vhdx} dinâmico & \texttt{.vmdk} esparso \\
+Controlador de disco & SCSI sintético (VMBus) & LSI Logic (emulado) \\
+Escalonador E/S conv. & \texttt{none} & \texttt{mq-deadline} \\
+Rede & \texttt{hv\_netvsc}, \textit{Default Switch} & \texttt{e1000}, NAT (VMnet8) \\
+Sistema de ficheiros & \multicolumn{2}{l}{\texttt{ext4} sobre LVM} \\
+Ferramentas & \multicolumn{2}{l}{\texttt{sysbench} 1.0.20, \texttt{fio} 3.41, \texttt{iperf3} 3.20} \\
+Servidor de rede & \multicolumn{2}{l}{\texttt{iperf3} 3.22 no Windows anfitrião} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Instalação e Protocolo de Isolamento}
+O Hyper-V foi ativado através das funcionalidades opcionais do Windows (\texttt{Microsoft-Hyper-V-All}). Como esta funcionalidade não está disponível de origem na edição Home, foi instalada \pendente{[descrever o método usado]}. A máquina foi criada no Gestor Hyper-V como Geração~2, com memória dinâmica desativada. Antes dos ensaios, o \textit{checkpoint} automático foi fundido, para que o disco não fosse um VHDX de diferenciação. O VMware Workstation foi instalado a partir do instalador oficial, e a máquina foi criada com a configuração predefinida para Ubuntu de 64~bits. Em ambos os casos, o Ubuntu Server~26.04 foi instalado com as opções predefinidas.
+
+Por omissão, o Hyper-V apresenta ao convidado os dois vCPU como dois \textit{threads} SMT de um único núcleo, enquanto o VMware os apresenta como processadores independentes. Para que a comparação incida apenas no hipervisor, desativou-se a exposição de SMT no Hyper-V (\texttt{Set-VMProcessor -HwThreadCountPerCore 1}). Assim, ambos os convidados dispõem de dois vCPU independentes, sem SMT, num único nó NUMA, como se confirmou com \texttt{lscpu}. A única diferença que resta é a forma como os vCPU são agrupados: num \textit{socket} no Hyper-V e em dois no VMware. Como o hipervisor do Windows não permite definir \textit{sockets} sem criar nós NUMA virtuais, esta forma foi mantida. Não tem efeito no desempenho, pois o anfitrião tem um único processador físico.
+
+Cada cenário exigiu um modo de arranque distinto do anfitrião, confirmado após cada reinício:
+\begin{itemize}
+\item \textbf{Hyper-V:} hipervisor ativo (\texttt{hypervisorlaunchtype auto}), com escalonador \textit{root} (tipo \texttt{0x4}, lido no registo de eventos do Windows).
+\item \textbf{VMware:} hipervisor e Integridade de Memória desativados (\texttt{hypervisorlaunchtype off}), com \texttt{HypervisorPresent = False} e o registo \texttt{vmware.log} a indicar \texttt{Monitor Mode: CPL0}.
+\end{itemize}
+Esta verificação é indispensável: com o hipervisor do Windows ativo, o VMware executaria em modo \texttt{ULM}, sobre o Hyper-V, e deixaria de representar um Tipo~2.
+
+Em ambos os cenários: apenas uma máquina virtual em execução; aplicações do anfitrião encerradas (incluindo a sincronização do OneDrive) e Windows Update em pausa; pastas das máquinas excluídas da análise em tempo real do Microsoft Defender; plano de energia ``Elevado desempenho'' com o equipamento sempre ligado à corrente. Antes de cada bateria, aguardaram-se 10~minutos após o arranque, e as tarefas automáticas de atualização do convidado (\texttt{apt}) foram suspensas. Os testes foram lançados por SSH dentro de uma sessão \texttt{tmux} no convidado.
+
+\subsection{Cargas de Trabalho}
+As cargas foram automatizadas num \textit{script} único e executadas de forma idêntica nos dois convidados (Tabela~\ref{tab_cargas}). Cada bateria inclui uma corrida de aquecimento descartada, seguida de $N=10$ repetições \textit{intercaladas}: em cada repetição alternam processador, memória e disco, para que perturbações lentas do anfitrião não afetem apenas um teste. Há pausas de 5~s entre testes, e a \textit{cache} de páginas do convidado é limpa antes de cada teste de disco (\texttt{drop\_caches}). Os testes de rede usaram um servidor \texttt{iperf3} no Windows anfitrião, com 10 repetições e aquecimento. Como a configuração é de nó único (\textit{single node}), o tráfego circula entre o convidado e o anfitrião apenas através do comutador virtual de cada hipervisor, sem passar por uma placa de rede física. Mede-se, assim, exclusivamente o custo da virtualização da rede, que de outro modo ficaria mascarado pelo limite de uma ligação física (cerca de 1~Gbit/s), igual para os dois cenários. Os comandos exatos, os \textit{scripts} e os dados brutos estão disponíveis no repositório do trabalho~\cite{b15}, para replicação.
+
+\textbf{Sistema de referência.} Para quantificar o \textit{overhead} face ao sistema hospedeiro, os mesmos testes foram executados no Windows anfitrião, com o hipervisor desligado (o modo do cenário VMware) e sem nenhuma máquina virtual em execução. Em cada subsistema usou-se a mesma ferramenta, com os mesmos parâmetros, no anfitrião e nos convidados. No disco, foi o \texttt{fio} com os seis perfis da Tabela~\ref{tab_cargas} (\texttt{windowsaio}, \texttt{direct=1}). Na rede, o \texttt{iperf3} em \textit{loopback} (127.0.0.1), como limite superior da pilha do anfitrião. No processador, como o \texttt{sysbench}~1.0 não tem versão nativa para Windows, usou-se o \textit{benchmark} do 7-Zip~\cite{b16} (\texttt{7z b -md22}, 1 e 2 \textit{threads}), repetido nos dois convidados. No anfitrião, os dois \textit{threads} foram fixados em dois núcleos físicos distintos, como os dois vCPU sem SMT das máquinas virtuais. A memória ficou sem referência, por não haver uma ferramenta equivalente nos dois sistemas.
+
+\begin{table}[t]
+\caption{Cargas de Trabalho (por repetição)}
+\label{tab_cargas}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Subsistema} & \textbf{Ferramenta e parâmetros} & \textbf{Duração} \\
+\midrule
+CPU & \texttt{sysbench cpu}, primos até 20\,000; 1 e 2 \textit{threads} & 10 s \\
+ & \texttt{7z b -md22}, 1 e 2 \textit{threads} (também no anfitrião) & -- \\
+\midrule
+\multirow{4}{*}{Memória} & \texttt{sysbench memory}, escrita seq., bloco 1 KiB & 10 s \\
+ & idem, escrita sequencial, bloco 1 MiB & 10 s \\
+ & idem, leitura sequencial, bloco 1 MiB & 10 s \\
+ & idem, leitura aleatória num \textit{buffer} de 256 MiB & 10 s \\
+\midrule
+\multirow{4}{*}{Disco} & \texttt{fio}, \texttt{libaio}, \texttt{direct=1}, ficheiro de 4 GiB: & \multirow{4}{*}{3+15 s} \\
+ & \quad leitura e escrita aleatórias 4 KiB, $Q=1$ & \\
+ & \quad mista 50/50 aleatória 4 KiB, $Q=1$ e $Q=32$ & \\
+ & \quad leitura e escrita sequenciais 1 MiB, $Q=16$ & \\
+\midrule
+\multirow{3}{*}{Rede} & \texttt{iperf3} TCP: convidado$\to$anfitrião, inverso, 4 ligações & 10 s \\
+ & \texttt{iperf3} UDP: 1 Mbit/s, 100 Mbit/s e 1 Gbit/s & 10 s \\
+ & \texttt{ping}: 50 pacotes ICMP a 200 ms (RTT) & 10 s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================= RESULTADOS
+\section{Resultados Experimentais}
+A Tabela~\ref{tab_res} consolida as métricas principais, e a Fig.~\ref{fig_rel} sintetiza o desempenho relativo do Tipo~2. Todas as repetições foram mantidas, incluindo três valores atípicos no VMware (uma escrita sequencial de 266~MiB/s, uma corrida de CPU com 1 \textit{thread} a 245~eventos/s e um RTT máximo de 10~ms), que aumentam o desvio-padrão mas não alteram a significância das conclusões.
+
+\begin{table*}[t]
+\caption{Resultados: Hyper-V (Tipo 1, escalonador \textit{root}) vs.\ VMware Workstation (Tipo 2), $\mu\pm\sigma$, $N=10$}
+\label{tab_res}
+\centering
+\footnotesize
+\begin{tabular}{@{}llrrrrc@{}}
+\toprule
+\textbf{Subsistema} & \textbf{Métrica} & \textbf{Hyper-V} & \textbf{VMware} & \textbf{$\Delta\%$} & \textbf{$p$ (Welch)} & \textbf{Melhor} \\
+\midrule
+\multirow{3}{*}{CPU}
+ & Eventos/s, 1 \textit{thread} & 295,2 $\pm$ 2,9 & 287,9 $\pm$ 18,3 & $-2{,}5$ & 0,241 & n.s. \\
+ & Eventos/s, 2 \textit{threads} & 552,8 $\pm$ 9,5 & 536,5 $\pm$ 22,3 & $-2{,}9$ & 0,055 & n.s. \\
+ & Latência p95, 2 \textit{threads} (ms) & 4,44 $\pm$ 0,06 & 4,58 $\pm$ 0,25 & $+3{,}0$ & 0,132 & n.s. \\
+\midrule
+\multirow{4}{*}{Memória (MiB/s)}
+ & Escrita seq., bloco 1 KiB & 4\,226 $\pm$ 267 & 4\,346 $\pm$ 163 & $+2{,}8$ & 0,244 & n.s. \\
+ & Leitura seq., bloco 1 MiB & 29\,140 $\pm$ 859 & 28\,840 $\pm$ 2\,122 & $-1{,}0$ & 0,686 & n.s. \\
+ & Escrita seq., bloco 1 MiB & 22\,499 $\pm$ 1\,181 & 22\,194 $\pm$ 2\,835 & $-1{,}4$ & 0,759 & n.s. \\
+ & \textbf{Leitura aleatória, 256 MiB} & \textbf{608 $\pm$ 33} & \textbf{441 $\pm$ 37} & $\mathbf{-27{,}4}$ & $<$\textbf{0,001} & \textbf{Tipo 1} \\
+\midrule
+\multirow{7}{*}{Disco}
+ & Leitura aleatória 4K, $Q=1$ (IOPS) & 3\,986 $\pm$ 183 & 6\,668 $\pm$ 1\,006 & $+67{,}3$ & $<$0,001 & Tipo 2 \\
+ & \quad latência média / p99 ($\mu$s) & 249 / 356 & 151 / 182 & $-39{,}5$ / $-49{,}0$ & $<$0,001 / $<$0,001 & Tipo 2 \\
+ & Escrita aleatória 4K, $Q=1$ (IOPS) & 5\,393 $\pm$ 295 & 6\,282 $\pm$ 770 & $+16{,}5$ & 0,006 & Tipo 2 \\
+ & Mista 4K, $Q=1$ (IOPS totais) & 4\,656 $\pm$ 206 & 6\,183 $\pm$ 971 & $+32{,}8$ & $<$0,001 & Tipo 2 \\
+ & \textbf{Mista 4K, $Q=32$ (IOPS totais)} & \textbf{75\,399 $\pm$ 2\,698} & \textbf{9\,161 $\pm$ 1\,152} & $\mathbf{-87{,}9}$ & $<$\textbf{0,001} & \textbf{Tipo 1} \\
+ & Leitura sequencial 1M, $Q=16$ (MiB/s) & 1\,293 $\pm$ 31 & 972 $\pm$ 30 & $-24{,}9$ & $<$0,001 & Tipo 1 \\
+ & Escrita sequencial 1M, $Q=16$ (MiB/s) & 1\,651 $\pm$ 232 & 798 $\pm$ 196 & $-51{,}7$ & $<$0,001 & Tipo 1 \\
+\midrule
+\multirow{7}{*}{Rede}
+ & TCP convidado$\to$anfitrião (Mbit/s) & 3\,546 $\pm$ 241 & 2\,374 $\pm$ 172 & $-33{,}0$ & $<$0,001 & Tipo 1 \\
+ & TCP anfitrião$\to$convidado (Mbit/s) & 6\,165 $\pm$ 539 & 2\,100 $\pm$ 73 & $-65{,}9$ & $<$0,001 & Tipo 1 \\
+ & TCP 4 ligações (Mbit/s) & 4\,584 $\pm$ 767 & 2\,282 $\pm$ 143 & $-50{,}2$ & $<$0,001 & Tipo 1 \\
+ & RTT médio / máximo (ms) & 0,46 / 0,78 & 0,51 / 2,33 & $+9{,}6$ / $+197$ & 0,287 / 0,129 & n.s. \\
+ & UDP 1 Mbit/s: \textit{jitter} (ms) & 0,044 $\pm$ 0,027 & 0,008 $\pm$ 0,005 & $-82{,}7$ & 0,002 & Tipo 2 \\
+ & UDP 100 Mbit/s: \textit{jitter} (ms) & 0,020 $\pm$ 0,010 & 0,126 $\pm$ 0,039 & $+547$ & $<$0,001 & Tipo 1 \\
+ & UDP 1 Gbit/s: débito (Mbit/s) / perda (\%) & 977 / 2,3 & 299 / 0,0 & $-69{,}4$ / -- & $<$0,001 / 0,003 & Tipo 1 \\
+\bottomrule
+\multicolumn{7}{@{}l}{\scriptsize n.s.: diferença não significativa ($p\geq0{,}05$). Convenção de sinais de $\Delta\%$ conforme a Secção III-D.}
+\end{tabular}
+\end{table*}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  xbar, width=0.80\columnwidth, height=8.0cm,
+  xmin=0, xmax=215, bar width=5pt,
+  xlabel={VMware relativo ao Hyper-V (\%)},
+  symbolic y coords={Rede UDP 1G,Rede 4 lig.,Rede anf.$\to$conv.,Rede conv.$\to$anf.,Disco seq. escrita,Disco seq. leitura,Disco mista Q32,Disco mista Q1,Disco leit. aleat. Q1,Mem. aleat. 256M,Mem. escrita 1M,Mem. leitura 1M,Mem. escrita 1K,CPU 2 threads,CPU 1 thread},
+  ytick=data, y tick label style={font=\tiny},
+  x tick label style={font=\scriptsize}, xlabel style={font=\scriptsize},
+  nodes near coords, nodes near coords align={horizontal},
+  every node near coord/.append style={font=\tiny, xshift=13pt, fill=white, inner sep=0.5pt},
+  /pgf/number format/.cd, fixed, precision=0,
+  enlarge y limits=0.05,
+  extra x ticks={100}, extra x tick style={grid=major, grid style={dashed, black!60}, tick label style={font=\scriptsize\bfseries}},
+]
+\addplot[fill=tipodois!70, draw=tipodois!90!black, error bars/.cd, x dir=both, x explicit]
+  coordinates {
+    (97.5,CPU 1 thread) +- (6.2,0)
+    (97.1,CPU 2 threads) +- (4.0,0)
+    (102.8,Mem. escrita 1K) +- (3.9,0)
+    (99.0,Mem. leitura 1M) +- (7.3,0)
+    (98.6,Mem. escrita 1M) +- (12.6,0)
+    (72.6,Mem. aleat. 256M) +- (6.1,0)
+    (167.3,Disco leit. aleat. Q1) +- (25.2,0)
+    (132.8,Disco mista Q1) +- (20.9,0)
+    (12.2,Disco mista Q32) +- (1.5,0)
+    (75.1,Disco seq. leitura) +- (2.3,0)
+    (48.3,Disco seq. escrita) +- (11.9,0)
+    (67.0,Rede conv.$\to$anf.) +- (4.9,0)
+    (34.1,Rede anf.$\to$conv.) +- (1.2,0)
+    (49.8,Rede 4 lig.) +- (3.1,0)
+    (30.6,Rede UDP 1G) +- (1.0,0)
+  };
+\end{axis}
+\end{tikzpicture}
+\caption{Débito do Tipo~2 relativo ao Tipo~1 (Hyper-V $=100\%$, tracejado). Barras de erro: $\sigma_{\mathrm{VMware}}/\mu_{\mathrm{Hyper\text{-}V}}$ (não incluem a dispersão do Hyper-V, indicada na Tabela~\ref{tab_res}).}
+\label{fig_rel}
+\end{figure}
+
+\subsection{Overhead Face ao Anfitrião}
+\pendente{[A preencher com os resultados da referência: tabela Anfitrião / Hyper-V / VMware para o 7-Zip (MIPS, 1 e 2 threads), o fio (6 perfis) e o iperf3 (loopback), com o overhead (\%) de cada hipervisor face ao anfitrião, calculado com a Eq.~\eqref{eq_delta} usando o anfitrião como referência.]}
+
+\subsection{Processador}
+Com um \textit{thread}, o Hyper-V obteve 295,2~eventos/s e o VMware 287,9 ($-2{,}5\%$, $p=0{,}241$). Com dois \textit{threads}, os valores foram 552,8 e 536,5 ($-2{,}9\%$, $p=0{,}055$). Nenhuma das diferenças é significativa, e o fator de escala de 1 para 2 \textit{threads} é praticamente igual (1,87 no Hyper-V e 1,86 no VMware). O resultado está de acordo com a literatura: com virtualização assistida por hardware, o código de utilizador executa diretamente no processador em ambas as arquiteturas~\cite{b9,b13}. A diferença está na \textit{estabilidade}: o coeficiente de variação foi de 1,0--1,7\% no Hyper-V e de 4,2--6,4\% no VMware. Isto é compatível com o facto de os vCPU do Tipo~2 serem \textit{threads} de um processo comum, sujeitos à concorrência das restantes tarefas do Windows.
+
+\textbf{Efeito do escalonador.} Repetiu-se o teste de processador com o \textit{core scheduler} (\texttt{hypervisorschedulertype core}), o predefinido no Windows Server, mantendo a mesma topologia (Fig.~\ref{fig_cpu}). Com dois \textit{threads}, o débito foi equivalente (555,6 contra 552,8~eventos/s, $+0{,}5\%$, $p=0{,}77$). Com um \textit{thread}, foi 6,1\% inferior (277,2 contra 295,2, $p<0{,}001$), com maior dispersão (percentil~95 de 4,56 contra 3,59~ms). Assim, para uma máquina com vCPU independentes, a escolha do escalonador não altera o débito agregado. A pequena perda com um único \textit{thread} é compatível com o custo adicional de coordenação do isolamento por núcleo físico que o \textit{core scheduler} impõe~\cite{b11}. O escalonador predefinido do Windows~11 não favorece, portanto, o Hyper-V face ao do Windows Server.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, width=0.95\columnwidth, height=4.3cm,
+  bar width=10pt, ymin=0, ymax=680,
+  ylabel={Eventos por segundo},
+  symbolic x coords={1 thread,2 threads}, xtick=data,
+  enlarge x limits=0.4,
+  legend style={at={(0.5,1.03)}, anchor=south, font=\tiny, legend columns=3},
+  tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  nodes near coords, every node near coord/.append style={font=\tiny, yshift=4pt},
+  /pgf/number format/.cd, fixed, precision=0,
+]
+\addplot[fill=tipoum!80, draw=tipoum!90!black, error bars/.cd, y dir=both, y explicit]
+  coordinates {(1 thread,295.2) +- (0,2.9) (2 threads,552.8) +- (0,9.5)};
+\addplot[fill=tipocore, draw=tipoum!70!black, error bars/.cd, y dir=both, y explicit]
+  coordinates {(1 thread,277.2) +- (0,10.5) (2 threads,555.6) +- (0,28.7)};
+\addplot[fill=tipodois!70, draw=tipodois!90!black, error bars/.cd, y dir=both, y explicit]
+  coordinates {(1 thread,287.9) +- (0,18.3) (2 threads,536.5) +- (0,22.3)};
+\legend{Hyper-V \textit{root}, Hyper-V \textit{core}, VMware}
+\end{axis}
+\end{tikzpicture}
+\caption{Processador ($\mu\pm\sigma$): paridade entre os três cenários com dois \textit{threads}.}
+\label{fig_cpu}
+\end{figure}
+
+\subsection{Memória}
+Nos três testes sequenciais, as diferenças estão entre $-1{,}4\%$ e $+2{,}8\%$ e nenhuma é significativa: tanto a largura de banda da RAM (blocos de 1~MiB, que excedem as \textit{caches}) como o acesso residente em \textit{cache} L1 (blocos de 1~KiB) são equivalentes. O acesso \textit{aleatório} num \textit{buffer} de 256~MiB, porém, é 27,4\% mais lento no VMware (441 contra 608~MiB/s, $p<0{,}001$). É o único teste de memória que provoca falhas sistemáticas de TLB e, portanto, percursos completos pelas tabelas de páginas do convidado e do hipervisor. O seu custo depende do tamanho das páginas que o hipervisor usa para mapear a memória do convidado~\cite{b10}. A diferença é compatível com o Hyper-V mapear a memória das partições com páginas grandes, enquanto no VMware a memória do convidado pertence ao processo \texttt{vmware-vmx} e é gerida pelo Windows, que por omissão a atribui em páginas de 4~KiB. Conclui-se que a memória não tem \textit{overhead} relativo no acesso sequencial, mas tem um custo mensurável no Tipo~2 para cargas com fraca localidade, como bases de dados ou estruturas de dados dispersas.
+
+\subsection{Armazenamento}
+O armazenamento apresenta dois regimes opostos.
+
+\textbf{Fila unitária ($Q=1$): vantagem do Tipo~2.} Com um pedido de cada vez, o VMware obteve mais 67\% de IOPS em leitura aleatória, com latência média de 151~$\mu$s contra 249~$\mu$s e um percentil~99 de 182~$\mu$s contra 356~$\mu$s. Este comportamento é compatível com a \textit{cache} de ficheiros do Windows. O ficheiro de teste de 4~GiB, escrito pelo \texttt{fio} na preparação, cabe nos 16~GB do anfitrião, e o \texttt{vmware-vmx} acede ao \texttt{.vmdk} através do sistema de ficheiros. Assim, as leituras ``diretas'' do convidado são servidas a partir da RAM do anfitrião. A opção \texttt{direct=1} elimina a \textit{cache} do convidado, mas não a do anfitrião. A escrita beneficia do mesmo mecanismo em modo \textit{write-back} ($+16{,}5\%$ IOPS): o convidado recebe confirmação antes de os dados chegarem ao SSD, o que melhora a latência à custa da durabilidade em caso de falha de energia. No Hyper-V, cada pedido percorre o VMBus até ao NVMe, sem esta \textit{cache}.
+
+\textbf{Paralelismo e débito: vantagem do Tipo~1.} Com 32 pedidos em fila, o Hyper-V passou de 4\,656 para 75\,399~IOPS (16 vezes mais), com uma latência média (ponderada entre leituras e escritas) de apenas 424~$\mu$s. O VMware passou de 6\,183 para 9\,161 (1,5 vezes), com uma latência de 3\,541~$\mu$s: uma diferença de $-88\%$ ($p<0{,}001$). A lei de Little~\eqref{eq_little} reproduz ambos os valores: $32/424\,\mu\mathrm{s}\approx75\,500$ e $32/3\,541\,\mu\mathrm{s}\approx9\,036$~IOPS, a menos de 1,5\% do medido. No VMware, a latência cresce na proporção da fila e o débito satura em cerca de 9\,000~IOPS. O caminho de E/S está, portanto, \textit{serializado}, como é esperado de um controlador emulado (LSI Logic) tratado por um processo em modo utilizador. O controlador sintético do Hyper-V, pelo contrário, despacha os pedidos em paralelo até ao NVMe. O mesmo limite reflete-se no débito sequencial com blocos de 1~MiB: $-25\%$ em leitura e $-52\%$ em escrita no Tipo~2 (Fig.~\ref{fig_disco}).
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, width=0.95\columnwidth, height=4.4cm,
+  bar width=13pt, ymode=log, ymin=1000, ymax=200000,
+  log origin=infty,
+  ylabel={IOPS totais (escala log.)},
+  symbolic x coords={$Q=1$,$Q=32$}, xtick=data,
+  enlarge x limits=0.45,
+  legend style={at={(0.03,0.97)}, anchor=north west, font=\scriptsize},
+  tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  nodes near coords, every node near coord/.append style={font=\tiny, yshift=2pt},
+  /pgf/number format/.cd, fixed, precision=0, 1000 sep={\,},
+  point meta=rawy,
+]
+\addplot[fill=tipoum!80, draw=tipoum!90!black] coordinates {($Q=1$,4656) ($Q=32$,75399)};
+\addplot[fill=tipodois!70, draw=tipodois!90!black] coordinates {($Q=1$,6183) ($Q=32$,9161)};
+\legend{Hyper-V (Tipo 1), VMware (Tipo 2)}
+\end{axis}
+\end{tikzpicture}
+\caption{E/S aleatória mista 4~KiB: o Tipo~2 é mais rápido com $Q=1$ (\textit{cache} do anfitrião), mas não escala com a profundidade de fila.}
+\label{fig_disco}
+\end{figure}
+
+\subsection{Rede}
+O Hyper-V obteve débitos TCP 33\% superiores no sentido convidado$\to$anfitrião, 66\% superiores no sentido inverso (neste sentido, o \texttt{iperf3} do anfitrião chegou a 87\% de CPU, pelo que o valor do Hyper-V pode estar limitado pelo próprio gerador de tráfego) e 50\% superiores com quatro ligações paralelas, todos com $p<0{,}001$ (Fig.~\ref{fig_rede}). A latência ida-e-volta média é equivalente (0,46 contra 0,51~ms, $p=0{,}29$), mas o VMware apresenta picos até 2,3~ms e uma variação quatro vezes superior. A diferença resulta do tipo de dispositivo: a placa \texttt{e1000} do VMware é emulada, e cada acesso aos seus registos implica uma saída para o monitor e processamento no \texttt{vmware-vmx}, enquanto o \texttt{hv\_netvsc} do Hyper-V troca pacotes em lote pelo VMBus. No envio a partir do convidado, o processo \texttt{iperf3} do anfitrião consumiu 31,6\% de CPU no VMware, contra 9,4\% no Hyper-V, para um débito inferior: cerca de 75 contra 376~Mbit/s por ponto percentual. Ou seja, no VMware a receção de cada bit custa mais CPU no anfitrião. Com a placa paravirtualizada \texttt{vmxnet3}, a diferença seria provavelmente menor. Não foi ensaiada para manter a configuração predefinida (Secção~VI). Os ensaios UDP confirmam este padrão. Com tráfego mínimo (1~Mbit/s), o \textit{jitter} é residual nos dois cenários (0,044 contra 0,008~ms). Com 100~Mbit/s, porém, o \textit{jitter} do VMware é seis vezes superior (0,126 contra 0,020~ms, $p<0{,}001$). A 1~Gbit/s, o Hyper-V entrega 977~Mbit/s com 2,3\% de perda, enquanto o VMware não ultrapassa os 299~Mbit/s. Não perde pacotes, mas apenas porque o limite está no envio, ou seja, na própria placa emulada: o débito máximo de pacotes UDP do Tipo~2 é cerca de um terço do do Tipo~1.
+
+À semelhança de Louro~\cite{b3}, usou-se o \texttt{iperf3} em TCP, para o débito, e em UDP, para o \textit{jitter}. Nesse trabalho, porém, o tráfego atravessava a rede física entre os dois nós de um \textit{cluster}, com uma janela TCP fixa de 20~KB: as máquinas sobre Hyper-V atingiram 207 a 222~Mbit/s e um \textit{jitter} de 0,39 a 1,07~ms~\cite[Figs.~4.3--4.4]{b3}. Por medirem caminhos diferentes, os valores absolutos não são comparáveis.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar, width=0.95\columnwidth, height=4.3cm,
+  bar width=11pt, ymin=0, ymax=8800,
+  ylabel={Débito TCP (Mbit/s)},
+  symbolic x coords={Conv.$\to$anf.,Anf.$\to$conv.,4 ligações}, xtick=data,
+  enlarge x limits=0.25,
+  legend style={at={(0.98,0.98)}, anchor=north east, font=\scriptsize},
+  tick label style={font=\scriptsize}, label style={font=\scriptsize},
+  nodes near coords, every node near coord/.append style={font=\tiny, yshift=4pt},
+  /pgf/number format/.cd, fixed, precision=0, 1000 sep={\,},
+]
+\addplot[fill=tipoum!80, draw=tipoum!90!black, error bars/.cd, y dir=both, y explicit]
+  coordinates {(Conv.$\to$anf.,3546) +- (0,241) (Anf.$\to$conv.,6165) +- (0,539) (4 ligações,4584) +- (0,767)};
+\addplot[fill=tipodois!70, draw=tipodois!90!black, error bars/.cd, y dir=both, y explicit]
+  coordinates {(Conv.$\to$anf.,2374) +- (0,172) (Anf.$\to$conv.,2100) +- (0,73) (4 ligações,2282) +- (0,143)};
+\legend{Hyper-V (\texttt{hv\_netvsc}), VMware (\texttt{e1000})}
+\end{axis}
+\end{tikzpicture}
+\caption{Débito de rede convidado$\leftrightarrow$anfitrião ($\mu\pm\sigma$).}
+\label{fig_rede}
+\end{figure}
+
+% ============================================================ LIMITAÇÕES
+\section{Limitações e Ameaças à Validade}
+\begin{itemize}
+\item \textbf{Referência:} o anfitrião usa NTFS e o Windows, e os convidados \texttt{ext4} e o Linux; a rede de referência é o \textit{loopback}, porque o caminho convidado$\leftrightarrow$anfitrião não existe sem virtualização; a memória não tem referência. O \textit{overhead} face ao anfitrião inclui, por isso, as diferenças entre sistemas operativos, e não só o custo do hipervisor.
+\item \textbf{Dispositivos predefinidos:} o VMware usou dispositivos emulados (LSI Logic, \texttt{e1000}) e o Hyper-V paravirtualizados. Isto reflete a configuração por omissão de cada produto, mas exagera a diferença face a um VMware com \texttt{vmxnet3} e PVSCSI/NVMe. Os escalonadores de E/S do convidado também diferiram (\texttt{none} e \texttt{mq-deadline}).
+\item \textbf{\textit{Cache} do anfitrião no Tipo~2:} o ficheiro de teste de 4~GiB cabe na memória do anfitrião e o \texttt{direct=1} só elimina a \textit{cache} do convidado. Assim, com $Q=1$, o VMware é em parte medido a partir da RAM do anfitrião e o Hyper-V a partir do NVMe. Os dois caminhos não são equivalentes, e a vantagem do Tipo~2 com $Q=1$ não deve ser lida como maior desempenho do disco virtual.
+\item \textbf{Assimetria de modo:} no cenário Hyper-V, o Windows executou como partição raiz com segurança baseada em virtualização ativa; no cenário VMware, sem hipervisor. Esta diferença é inerente às duas arquiteturas no mesmo equipamento.
+\item \textbf{Mecanismo da memória:} a explicação da diferença na leitura aleatória (tamanho das páginas) é inferida a partir do padrão dos resultados e da literatura, e não foi medida diretamente.
+\item \textbf{Equipamento:} um portátil com Windows~11 Home (edição em que o Hyper-V não é oficialmente suportado), em configuração de nó único e com 2~vCPU e 4~GB por máquina. Os resultados podem não se generalizar a servidores nem a infraestruturas com vários nós, em que a rede física também pesa.
+\item \textbf{\textit{Benchmarks} sintéticos:} medem subsistemas isolados e não cargas reais, que os combinam.
+\end{itemize}
+
+% ============================================================= CONCLUSÕES
+\section{Conclusões}
+Este trabalho comparou experimentalmente um hipervisor nativo (Hyper-V) e um hipervisor \textit{host-based} (VMware Workstation~17.6) no mesmo equipamento, com convidados Ubuntu Server~26.04 com os mesmos recursos e vCPU independentes. Nas condições ensaiadas:
+\begin{enumerate}
+\item \textbf{Processador e memória sequencial} não apresentam \textit{overhead} relativo significativo: a virtualização assistida por hardware torna-os equivalentes. O Hyper-V foi, contudo, mais estável (coeficiente de variação inferior a 2\%).
+\item \textbf{O acesso aleatório à memória} é 27\% mais lento no Tipo~2, consistente com um maior custo da tradução de endereços em dois níveis.
+\item \textbf{No armazenamento}, o Tipo~2 é mais rápido com pedidos isolados, porque a \textit{cache} do anfitrião serve as leituras e confirma as escritas antes de chegarem ao disco. Com concorrência, porém, o seu caminho de E/S satura em cerca de 9\,000~IOPS, como a lei de Little confirma, e perde 88\% de IOPS com $Q=32$ e 25--52\% de débito sequencial.
+\item \textbf{Na rede}, o Tipo~1 é 33--66\% mais rápido em TCP, suporta um débito UDP três vezes superior e tem um \textit{jitter} seis vezes inferior sob carga moderada, devido aos dispositivos paravirtualizados.
+\item \textbf{O escalonador do Hyper-V} (\textit{root} ou \textit{core}) não altera o débito de uma máquina com vCPU independentes.
+\end{enumerate}
+Para cargas de centro de dados, com E/S concorrente, rede intensiva e acesso disperso à memória, os resultados favorecem claramente o hipervisor nativo. O Tipo~2 mantém-se adequado para estações de trabalho com cargas interativas e pouco paralelas. Num anfitrião Windows, é ainda indispensável confirmar que o hipervisor de Tipo~2 executa no seu modo nativo (\texttt{CPL0}) e não sobre o Hyper-V. Como trabalho futuro, propõe-se repetir os ensaios com dispositivos paravirtualizados no VMware e avaliar cargas reais, como bases de dados e servidores web.
+
+% ============================================================ REFERÊNCIAS
+\begin{thebibliography}{00}
+\bibitem{b1} Microsoft, ``Hyper-V overview,'' [Online]. Available: \url{https://learn.microsoft.com/pt-pt/windows-server/virtualization/hyper-v/overview}. [Accessed: Oct.~18, 2026].
+\bibitem{b2} VMware, Inc., ``VMware Workstation Pro documentation,'' [Online]. Available: \url{https://www.vmware.com}. [Accessed: Oct.~18, 2026].
+\bibitem{b3} A. Louro, ``Comparação do desempenho de infraestruturas virtualizadas de elevada disponibilidade usando hypervisors nativos ou containers,'' M.Sc. dissertation, Dept. Eng. Informática, Univ. Beira Interior, Covilhã, Portugal, 2018. [Online]. Available: \url{https://ubibliorum.ubi.pt/handle/10400.6/9837}.
+\bibitem{b4} Universidade da Beira Interior, ``Conteúdos das aulas teóricas da unidade curricular Virtualização e Centros de Dados,'' [Online]. Available: \url{https://moodle.ubi.pt/}. [Accessed: Oct.~18, 2026].
+\bibitem{b5} A. Kopytov, ``sysbench: Scriptable database and system performance benchmark,'' GitHub, 2020. [Online]. Available: \url{https://github.com/akopytov/sysbench}.
+\bibitem{b6} J. Axboe, ``Flexible I/O Tester (fio),'' GitHub. [Online]. Available: \url{https://github.com/axboe/fio}. [Accessed: Oct.~18, 2026].
+\bibitem{b7} G. J. Popek and R. P. Goldberg, ``Formal requirements for virtualizable third generation architectures,'' \textit{Commun. ACM}, vol.~17, no.~7, pp.~412--421, 1974.
+\bibitem{b8} P. Barham \textit{et al.}, ``Xen and the art of virtualization,'' in \textit{Proc. 19th ACM Symp. Operating Systems Principles (SOSP)}, 2003, pp.~164--177.
+\bibitem{b9} K. Adams and O. Agesen, ``A comparison of software and hardware techniques for x86 virtualization,'' in \textit{Proc. 12th Int. Conf. ASPLOS}, 2006, pp.~2--13.
+\bibitem{b10} R. Bhargava, B. Serebrin, F. Spadini, and S. Manne, ``Accelerating two-dimensional page walks for virtualized systems,'' in \textit{Proc. 13th Int. Conf. ASPLOS}, 2008, pp.~26--35.
+\bibitem{b11} Microsoft, ``Manage Hyper-V hypervisor scheduler types,'' [Online]. Available: \url{https://learn.microsoft.com/windows-server/virtualization/hyper-v/manage/manage-hyper-v-scheduler-types}. [Accessed: Oct.~22, 2026].
+\bibitem{b12} Microsoft, ``Windows Hypervisor Platform,'' [Online]. Available: \url{https://learn.microsoft.com/virtualization/api/}. [Accessed: Oct.~22, 2026].
+\bibitem{b13} W. Felter, A. Ferreira, R. Rajamony, and J. Rubio, ``An updated performance comparison of virtual machines and Linux containers,'' in \textit{Proc. IEEE ISPASS}, 2015, pp.~171--172.
+\bibitem{b14} J. D. C. Little, ``A proof for the queuing formula: $L=\lambda W$,'' \textit{Operations Research}, vol.~9, no.~3, pp.~383--387, 1961.
+\bibitem{b15} H. Laia, A. Santos e D. Basílio, ``Hyper-V vs. VMware: comandos, \textit{scripts} e dados experimentais,'' GitHub, 2026. [Online]. Available: \url{https://github.com/henriquelaia/vcd-hyperv-vs-vmware}.
+\bibitem{b16} I. Pavlov, ``7-Zip: Benchmark,'' [Online]. Available: \url{https://www.7-zip.org/}. [Accessed: \pendente{data}].
+\end{thebibliography}
+
+\end{document}

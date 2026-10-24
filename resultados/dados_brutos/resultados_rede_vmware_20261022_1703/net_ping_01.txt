@@ -1,0 +1,5 @@
+PING 192.168.59.1 (192.168.59.1) 56(84) bytes of data.
+
+--- 192.168.59.1 ping statistics ---
+50 packets transmitted, 50 received, 0% packet loss, time 10494ms
+rtt min/avg/max/mdev = 0.386/0.470/1.270/0.124 ms

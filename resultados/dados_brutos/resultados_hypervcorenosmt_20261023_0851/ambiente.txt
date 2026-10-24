@@ -1,0 +1,116 @@
+== etiqueta: hypervcorenosmt   data: 2026-10-23T08:51:38+00:00   N=10   perfil=medio (sysbench 10s, fio 15s+3s)
+== uname
+Linux alex 7.0.0-38-generic #38-Ubuntu SMP PREEMPT_DYNAMIC Fri Sep  4 09:10:14 UTC 2026 x86_64 GNU/Linux
+== os-release
+PRETTY_NAME="Ubuntu 26.04.1 LTS"
+NAME="Ubuntu"
+VERSION_ID="26.04"
+VERSION="26.04.1 LTS (Resolute Raccoon)"
+VERSION_CODENAME=resolute
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=resolute
+LOGO=ubuntu-logo
+== virtualizacao
+microsoft
+== lscpu
+Architecture:                            x86_64
+CPU op-mode(s):                          32-bit, 64-bit
+Address sizes:                           39 bits physical, 48 bits virtual
+Byte Order:                              Little Endian
+CPU(s):                                  2
+On-line CPU(s) list:                     0,1
+Vendor ID:                               GenuineIntel
+Model name:                              Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz
+CPU family:                              6
+Model:                                   158
+Thread(s) per core:                      1
+Core(s) per socket:                      2
+Socket(s):                               1
+Stepping:                                10
+BogoMIPS:                                4800,01
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm rep_good nopl xtopology cpuid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch pti ssbd ibrs ibpb stibp fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt xsaveopt xsavec xgetbv1 xsaves md_clear flush_l1d arch_capabilities
+Hypervisor vendor:                       Microsoft
+Virtualization type:                     full
+L1d cache:                               64 KiB (2 instances)
+L1i cache:                               64 KiB (2 instances)
+L2 cache:                                512 KiB (2 instances)
+L3 cache:                                8 MiB (1 instance)
+NUMA node(s):                            1
+NUMA node0 CPU(s):                       0,1
+Vulnerability Gather data sampling:      Unknown: Dependent on hypervisor status
+Vulnerability Ghostwrite:                Not affected
+Vulnerability Indirect target selection: Mitigation; Aligned branch/return thunks
+Vulnerability Itlb multihit:             KVM: Mitigation: VMX unsupported
+Vulnerability L1tf:                      Mitigation; PTE Inversion
+Vulnerability Mds:                       Mitigation; Clear CPU buffers; SMT Host state unknown
+Vulnerability Meltdown:                  Mitigation; PTI
+Vulnerability Mmio stale data:           Mitigation; Clear CPU buffers; SMT Host state unknown
+Vulnerability Old microcode:             Not affected
+Vulnerability Reg file data sampling:    Not affected
+Vulnerability Retbleed:                  Mitigation; IBRS
+Vulnerability Spec rstack overflow:      Not affected
+Vulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:                Mitigation; IBRS; IBPB conditional; STIBP disabled; RSB filling; PBRSB-eIBRS Not affected; BHI SW loop, KVM SW loop
+Vulnerability Srbds:                     Unknown: Dependent on hypervisor status
+Vulnerability Tsa:                       Not affected
+Vulnerability Tsx async abort:           Not affected
+Vulnerability Vmscape:                   Not affected
+== memoria
+               total        used        free      shared  buff/cache   available
+Mem:            3398         550        2372           3         692        2847
+Swap:              0           0           0
+== discos
+NAME                       SIZE TYPE FSTYPE      MOUNTPOINT        ROTA MODEL
+loop0                     66,8M loop squashfs    /snap/core24/1643    1 
+loop1                     66,8M loop squashfs    /snap/core24/2124    1 
+loop2                      1,5M loop squashfs    /snap/hwctl/131      1 
+loop3                      1,5M loop squashfs    /snap/hwctl/123      1 
+loop4                     50,1M loop squashfs    /snap/snapd/27710    1 
+loop5                     44,7M loop squashfs    /snap/snapd/28254    1 
+sda                         25G disk                                  1 Virtual Disk
+├─sda1                       1G part vfat        /boot/efi            1 
+├─sda2                       2G part ext4        /boot                1 
+└─sda3                    21,9G part LVM2_member                      1 
+  └─ubuntu--vg-ubuntu--lv   11G lvm  ext4        /                    1 
+sr0                       1024M rom                                   0 Virtual DVD-ROM
+== fs do teste fio
+Filesystem                        Type 1K-blocks    Used Available Use% Mounted on
+/dev/mapper/ubuntu--vg-ubuntu--lv ext4  11218472 4416536   6210272  42% /
+== escalonador I/O
+/sys/block/loop0/queue/scheduler: [none] mq-deadline 
+/sys/block/loop1/queue/scheduler: [none] mq-deadline 
+/sys/block/loop2/queue/scheduler: [none] mq-deadline 
+/sys/block/loop3/queue/scheduler: [none] mq-deadline 
+/sys/block/loop4/queue/scheduler: [none] mq-deadline 
+/sys/block/loop5/queue/scheduler: [none] mq-deadline 
+/sys/block/loop6/queue/scheduler: [none] mq-deadline 
+/sys/block/loop7/queue/scheduler: [none] mq-deadline 
+/sys/block/sda/queue/scheduler: [none] mq-deadline 
+/sys/block/sr0/queue/scheduler: [none] mq-deadline 
+== modulos virt
+hyperv_drm             28672  0
+hv_balloon             45056  0
+hv_utils               45056  0
+hv_sock                24576  0
+vsock                  73728  1 hv_sock
+hid_hyperv             16384  0
+hid                   282624  2 hid_hyperv,hid_generic
+hv_storvsc             32768  3
+scsi_transport_fc     122880  1 hv_storvsc
+hv_netvsc             126976  0
+hyperv_keyboard        12288  0
+hv_vmbus              188416  8 hv_balloon,hv_utils,hv_netvsc,hid_hyperv,hv_storvsc,hyperv_keyboard,hyperv_drm,hv_sock
+== governor CPU
+n/a (normal numa VM)
+== versoes
+sysbench 1.0.20
+fio-3.41
+== open-vm-tools
+ii  open-vm-tools                           2:13.0.10-1ubuntu1                         amd64        Open VMware Tools for virtual machines hosted on VMware (CLI)
+fim: 2026-10-23T08:56:59+00:00

@@ -1,0 +1,7 @@
+== etiqueta: vmware   anfitriao: 192.168.59.1   N=10   T=10s   data: 2026-10-23T14:29:17+00:00   (UDP)
+== driver (ens33)
+/sys/bus/pci/drivers/e1000
+== MTU
+1500
+== versoes
+iperf 3.20 (cJSON 1.7.15)
