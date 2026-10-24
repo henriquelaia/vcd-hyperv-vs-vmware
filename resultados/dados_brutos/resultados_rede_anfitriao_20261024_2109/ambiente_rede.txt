@@ -1,0 +1,6 @@
+﻿== etiqueta: anfitriao   anfitriao: 127.0.0.1 (loopback)   N=10   T=10s   data: 2026-10-24T21:09:26
+== hipervisor presente: False
+== versoes
+iperf 3.22 (cJSON 1.7.15)
+CYGWIN_NT-10.0-26200 Ruivo 3.6.10-1.x86_64 2026-07-13 20:20 UTC x86_64
+Optional features available: CPU affinity setting, support IPv4 don't fragment, POSIX threads

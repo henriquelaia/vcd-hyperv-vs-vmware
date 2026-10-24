@@ -1,0 +1,21 @@
+﻿== etiqueta: anfitriao   data: 2026-10-24T20:43:05   N=10   (fio 15s+3s, windowsaio, direct=1)
+== hipervisor presente: False
+== fio
+fio-3.41
+== discos
+
+FriendlyName               MediaType BusType          Size
+------------               --------- -------          ----
+SAMSUNG MZVLB1T0HALR-000H1 SSD       NVMe    1024209543168
+
+
+== volume
+
+DriveLetter FriendlyName FileSystemType DriveType HealthStatus OperationalStatus SizeRemaining      Size
+----------- ------------ -------------- --------- ------------ ----------------- -------------      ----
+C           Windows      NTFS           Fixed     Healthy      OK                    493.33 GB 952.59 GB
+
+
+== energia
+Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (Elevado desempenho)
+fim: 2026-10-24T21:08:58
