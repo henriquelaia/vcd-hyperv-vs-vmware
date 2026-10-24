@@ -244,7 +244,7 @@ O enunciado pede que o *overhead* seja quantificado face a um sistema de referê
 | Subsistema | Anfitrião (Windows) | Convidados (Ubuntu) | Nota |
 |---|---|---|---|
 | Processador | `8_7z_anfitriao.ps1` | `bench7z.sh` | o `sysbench` 1.0 não tem versão nativa para Windows; usa-se o benchmark do 7-Zip, igual nos dois sistemas |
-| Memória | — | — | sem ferramenta equivalente nos dois sistemas: não aplicável |
+| Memória | — | — | sem ferramenta equivalente no Windows; referência medida no Ubuntu nativo (11.5) |
 | Disco | `7_fio_anfitriao.ps1` | `bench.sh` (já feito) | `fio`, os mesmos 6 perfis, `direct=1` |
 | Rede | `9_rede_loopback.ps1` | `rede.sh` (já feito) | *loopback* 127.0.0.1 como limite superior da pilha |
 
@@ -278,6 +278,28 @@ python3 parse_resultados.py resultados_anfitriao_*      resultados_hyperv_2*    
 python3 parse_resultados.py resultados_rede_anfitriao_* resultados_rede_hyperv_* resultados_rede_vmware_*
 ```
 Correr cada linha numa pasta diferente (cada execução reescreve os CSV). O `comparacao.csv` passa a dar o *overhead* de cada hipervisor face ao anfitrião.
+
+### 11.5 Referência Linux nativa (Ubuntu 26.04 em live USB)
+
+Complementa a referência Windows. O mesmo portátil arranca o Ubuntu 26.04.1 Desktop a partir de uma pen (modo "Experimentar", sem instalar nada), diretamente no hardware. Assim, o processador e a memória são medidos com **as mesmas ferramentas, o mesmo SO e o mesmo *kernel*** das VMs, e passa a haver referência para a memória.
+
+- **Sem disco:** no live USB a raiz está em RAM, e um disco externo por USB não seria o SSD interno das VMs. O disco fica com a referência Windows (11.2).
+- Os 2 *threads* ficam presos a 2 núcleos físicos diferentes (`taskset`), como no Windows (afinidade `0x5`) e como os 2 vCPU sem SMT.
+- Pen de 8 GB ou mais, gravada com o balenaEtcher. Precisa de Internet (instala o `sysbench` e descarrega o 7-Zip).
+
+```bash
+# no Ubuntu da pen, na pasta scripts/ubuntu do repositório (Code > Download ZIP)
+bash nativo_pen.sh 2501        # 2501 = a mesma versão do 7-Zip do Windows   (~40 min)
+```
+O script corre `SKIP_FIO=1 ./bench.sh nativo` e `./bench7z.sh nativo`. **Tudo fica em RAM**: os `.tar.gz` têm de ser copiados para fora antes de desligar.
+
+Processamento (a primeira pasta é a referência):
+```bash
+python3 parse_resultados.py resultados_nativo_*        resultados_hyperv_2*    resultados_vmware_2*
+python3 parse_resultados.py resultados_7z_nativo_*     resultados_7z_hyperv_*  resultados_7z_vmware_*
+python3 parse_resultados.py resultados_7z_anfitriao_*  resultados_7z_nativo_*   # efeito do SO (Windows vs. Linux)
+```
+Com as duas referências separa-se o efeito do SO (Windows face a Linux nativo) do efeito da virtualização (Linux nativo face às VMs).
 
 ---
 

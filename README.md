@@ -10,7 +10,7 @@ Materiais do 1.º Projeto Laboratorial de **Virtualização e Centros de Dados**
 |---|---|
 | [`relatorio/`](relatorio) | relatório (formato IEEE conferência): `.pdf` e fonte `.tex` |
 | [`COMANDOS.md`](COMANDOS.md) | **Todos os comandos usados**, passo a passo, para replicar os testes |
-| [`scripts/ubuntu/`](scripts/ubuntu) | `bench.sh` (CPU, memória, disco), `bench7z.sh` (CPU com 7-Zip), `rede.sh` (rede TCP e ping), `rede_udp.sh` (rede UDP) e `parse_resultados.py` (estatística) |
+| [`scripts/ubuntu/`](scripts/ubuntu) | `bench.sh` (CPU, memória, disco), `bench7z.sh` (CPU com 7-Zip), `nativo_pen.sh` (referência no Ubuntu nativo, live USB), `rede.sh` (rede TCP e ping), `rede_udp.sh` (rede UDP) e `parse_resultados.py` (estatística) |
 | [`scripts/windows/`](scripts/windows) | scripts PowerShell para preparar, mudar e verificar o modo do anfitrião |
 | [`resultados/resultados_vcd.xlsx`](resultados/resultados_vcd.xlsx) | resultados completos, com médias, desvios, IC95, Δ% e testes t em fórmulas |
 | [`resultados/csv/`](resultados/csv) | `corridas.csv`, `resumo.csv` e `comparacao.csv` |
@@ -30,9 +30,10 @@ Instalar: [7-Zip](https://www.7-zip.org), [fio para Windows](https://github.com/
    `8_7z_anfitriao.ps1` → `7_fio_anfitriao.ps1` → `9_rede_loopback.ps1`.
 2. Ainda no modo VMware, na VM VMware: `./bench7z.sh vmware`. Opcionalmente, o teste `vmxnet3` (secção 12 do `COMANDOS.md`).
 3. **Modo Hyper-V** (`2_modo_hyperv.ps1`, reiniciar), na VM Hyper-V: `./bench7z.sh hyperv`.
-4. Copiar as pastas `resultados_*` para `resultados/dados_brutos/` e fazer *commit*.
+4. **Ubuntu nativo (pen live USB)**: arrancar pela pen em "Experimentar Ubuntu" e correr `bash nativo_pen.sh <versão do 7-Zip>` na pasta `scripts/ubuntu` (CPU e memória, sem disco).
+5. Copiar as pastas `resultados_*` para `resultados/dados_brutos/` e fazer *commit*.
 
-Detalhes e justificação na secção 11 do [`COMANDOS.md`](COMANDOS.md#11-referência-o-anfitrião-sem-virtualização).
+Guia passo a passo: [`INSTRUCOES_ALEX.md`](INSTRUCOES_ALEX.md). Detalhes e justificação na secção 11 do [`COMANDOS.md`](COMANDOS.md#11-referência-o-anfitrião-sem-virtualização).
 
 ## Replicação rápida
 
