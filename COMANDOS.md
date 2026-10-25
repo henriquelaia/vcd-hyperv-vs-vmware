@@ -1,7 +1,7 @@
 # Hyper-V vs. VMware: Comandos de Benchmark (Replicação)
 
 Comandos usados no trabalho **"Hyper-V vs. VMware: Overhead da Virtualização"** (Virtualização e Centros de Dados, Universidade da Beira Interior).
-Todos foram executados exatamente como indicado, de forma automatizada pelos scripts [`bench.sh`](scripts/ubuntu/bench.sh), [`rede.sh`](scripts/ubuntu/rede.sh) e [`rede_udp.sh`](scripts/ubuntu/rede_udp.sh) (perfil `medio`).
+Todos foram executados exatamente como indicado, de forma automatizada pelos scripts [`bench.sh`](scripts/ubuntu/bench.sh), [`rede.sh`](scripts/ubuntu/rede.sh) e [`rede_udp.sh`](scripts/ubuntu/rede_udp.sh).
 
 ---
 
@@ -217,7 +217,7 @@ chmod +x bench.sh rede.sh
 ONLY_CPU=1 ./bench.sh hypervcorenosmt   # experiência do escalonador (só CPU)
 ```
 
-Cada pasta de resultados inclui o `ambiente.txt` (sistema, `lscpu`, discos, versões, perfil e N) e as saídas originais:
+Cada pasta de resultados inclui o `ambiente.txt` (sistema, `lscpu`, discos, versões e N) e as saídas originais:
 
 | Ficheiro | Ferramenta |
 |---|---|

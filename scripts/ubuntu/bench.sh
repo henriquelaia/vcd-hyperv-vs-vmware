@@ -15,21 +15,16 @@
 #          SKIP_FIO=1      não corre os testes de disco
 #          ONLY_CPU=1      só corre os testes de CPU
 #
-#   duração: cerca de 40 minutos (perfil medio).
+#   duração: cerca de 40 minutos.
 #   No fim é criada a pasta  resultados_<etiqueta>_<data>/  e o respetivo .tar.gz
 # =============================================================================
 set -euo pipefail
 
 TAG=${1:?"uso: ./bench.sh hyperv|vmware|nativo"}
-# perfil de duração: medio (predefinido), completo ou rapido
-PERFIL=${PERFIL:-medio}
-case "$PERFIL" in
-  completo) N_DEF=10; T_SYS=30; T_FIO=30; T_RAMP=5 ;;
-  medio)    N_DEF=10; T_SYS=10; T_FIO=15; T_RAMP=3 ;;
-  rapido)   N_DEF=5;  T_SYS=10; T_FIO=15; T_RAMP=3 ;;
-  *) echo "PERFIL desconhecido: $PERFIL (usa completo|medio|rapido)"; exit 1 ;;
-esac
-N=${N:-$N_DEF}
+T_SYS=10     # segundos por teste sysbench
+T_FIO=15     # segundos por teste fio
+T_RAMP=3     # segundos de arranque do fio (não medidos)
+N=${N:-10}
 FIO_DIR=${FIO_DIR:-$HOME/fio_teste}
 OUT="resultados_${TAG}_$(date +%Y%m%d_%H%M)"
 THREADS=2
@@ -53,7 +48,7 @@ fi
 # ---------------------------------------------------------------- ambiente ---
 echo ">> A recolher informação do ambiente…"
 {
-  echo "== etiqueta: $TAG   data: $(date -Is)   N=$N   perfil=$PERFIL (sysbench ${T_SYS}s, fio ${T_FIO}s+${T_RAMP}s)"
+  echo "== etiqueta: $TAG   data: $(date -Is)   N=$N   (sysbench ${T_SYS}s, fio ${T_FIO}s+${T_RAMP}s)"
   echo "== uname";            uname -a
   echo "== os-release";       cat /etc/os-release
   echo "== virtualizacao";    systemd-detect-virt || true
