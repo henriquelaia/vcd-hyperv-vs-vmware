@@ -2,7 +2,7 @@
 
 Materiais do 1.º Projeto Laboratorial de **Virtualização e Centros de Dados** (Departamento de Informática, Universidade da Beira Interior): comparação de desempenho entre um hipervisor nativo (Microsoft Hyper-V, Tipo 1) e um hipervisor baseado em anfitrião (VMware Workstation 17.6, Tipo 2), no mesmo equipamento, com convidados Ubuntu Server 26.04.
 
-**Autores:** Henrique Laia (M16491) · Alexandre Santos · Daniel Basílio
+**Autores:** Henrique Laia (M16491) · Alexandre Santos (M16740) · Daniel Basílio (E11929)
 
 ## Conteúdo
 
@@ -11,7 +11,7 @@ Materiais do 1.º Projeto Laboratorial de **Virtualização e Centros de Dados**
 | [`relatorio/`](relatorio) | relatório (formato IEEE conferência): `.pdf` e fonte `.tex` |
 | [`COMANDOS.md`](COMANDOS.md) | **Todos os comandos usados**, passo a passo, para replicar os testes |
 | [`scripts/ubuntu/`](scripts/ubuntu) | `bench.sh` (CPU, memória, disco), `nativo_pen.sh` (referência no Ubuntu nativo, live USB), `rede.sh` (rede TCP e ping), `rede_udp.sh` (rede UDP) e `parse_resultados.py` (estatística) |
-| [`scripts/windows/`](scripts/windows) | scripts PowerShell para preparar, mudar e verificar o modo do anfitrião, e `7_fio_anfitriao.ps1` / `9_rede_loopback.ps1` (referência) |
+| [`scripts/windows/`](scripts/windows) | `0_instalar_hyperv_home.bat` (Hyper-V no Windows Home) e scripts PowerShell para preparar, mudar e verificar o modo do anfitrião, e `7_fio_anfitriao.ps1` / `9_rede_loopback.ps1` (referência) |
 | [`resultados/resultados_vcd.xlsx`](resultados/resultados_vcd.xlsx) | resultados completos, com médias, desvios, IC95, Δ% e testes t em fórmulas |
 | [`resultados/csv/`](resultados/csv) | `corridas.csv`, `resumo.csv` e `comparacao.csv` |
 | [`resultados/dados_brutos/`](resultados/dados_brutos) | saídas originais do sysbench, fio, iperf3 e ping (10 repetições por teste) |

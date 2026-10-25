@@ -42,6 +42,18 @@ Todos foram executados exatamente como indicado, de forma automatizada pelos scr
 
 Só uma VM corre de cada vez. Cada mudança de modo exige **reiniciar** o PC.
 
+### Instalar o Hyper-V no Windows 11 Home
+
+A edição Home não mostra o Hyper-V nas funcionalidades opcionais, mas os pacotes já vêm no sistema. O script [`0_instalar_hyperv_home.bat`](scripts/windows/0_instalar_hyperv_home.bat), executado **como administrador**, adiciona-os com o DISM e ativa a funcionalidade; no fim, reiniciar o PC.
+```bat
+pushd "%~dp0"
+dir /b %SystemRoot%\servicing\Packages\*Hyper-V*.mum >hyper-v.txt
+for /f %%i in ('findstr /i . hyper-v.txt 2^>nul') do dism /online /norestart /add-package:"%SystemRoot%\servicing\Packages\%%i"
+del hyper-v.txt
+Dism /online /enable-feature /featurename:Microsoft-Hyper-V -All /LimitAccess /ALL
+pause
+```
+
 ### Modo Hyper-V (escalonador *root*, o predefinido do Windows 11)
 ```powershell
 bcdedit /set hypervisorlaunchtype auto
