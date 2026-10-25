@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # =============================================================================
 # rede_udp.sh — testes de rede UDP convidado -> anfitrião (iperf3): jitter e perda
-# Complementa o rede.sh (TCP + ping). Metodologia alinhada com Louro (2018).
-# Correr DENTRO da VM Ubuntu, com o servidor iperf3 a correr no Windows
-# (6_servidor_rede.ps1).
+# Complementa o rede.sh (TCP e ping), como em Louro (2018).
+# Corre dentro da máquina virtual Ubuntu, com o servidor iperf3 ligado no
+# Windows (6_servidor_rede.ps1).
 #
 #   uso:   chmod +x rede_udp.sh
 #          ./rede_udp.sh hyperv IP_DO_ANFITRIAO
 #          ./rede_udp.sh vmware IP_DO_ANFITRIAO
 #
 #   Testes (10 repetições, 10 s cada, com aquecimento):
-#     net_udp_1m     -> iperf3 -u -c H            (débito predefinido de 1 Mbit/s, como no Louro)
+#     net_udp_1m     -> iperf3 -u -c H            (1 Mbit/s, o valor predefinido)
 #     net_udp_100m   -> iperf3 -u -c H -b 100M    (carga moderada)
 #     net_udp_1g     -> iperf3 -u -c H -b 1G      (carga elevada: perda)
 #   Métricas: jitter (ms), perda (%), débito recebido (Mbit/s)
-#   duração aproximada: ~7 minutos. No fim cria resultados_rede_udp_<etiqueta>_<data>.tar.gz
+#   duração: cerca de 7 minutos. No fim cria resultados_rede_udp_<etiqueta>_<data>.tar.gz
 # =============================================================================
 set -euo pipefail
 

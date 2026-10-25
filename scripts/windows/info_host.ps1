@@ -1,11 +1,10 @@
 ﻿# =============================================================================
 # info_host.ps1 — recolhe a configuração do anfitrião Windows 11 e das VMs
-# Abrir o PowerShell COMO ADMINISTRADOR, ir para a pasta deste ficheiro e:
+# No PowerShell como Administrador, na pasta deste ficheiro:
 #     Set-ExecutionPolicy -Scope Process Bypass
 #     .\info_host.ps1 -VmwareVmDir "C:\caminho\para\a\pasta\da\VM\VMware"
-# Gera  info_host.txt  -> enviar.
-# Correr DUAS vezes: (1) na configuração usada para o Hyper-V e
-#                    (2) na configuração usada para o VMware (depois de reiniciar).
+# Gera o ficheiro info_host.txt.
+# Corre-se duas vezes: no modo Hyper-V e no modo VMware.
 # =============================================================================
 param([string]$VmwareVmDir = "")
 

@@ -1,9 +1,9 @@
-# =============================================================================
-# 9_rede_loopback.ps1  -  referencia de REDE no proprio anfitriao (sem VM)
-#   Sem virtualizacao nao existe o caminho convidado<->anfitriao; mede-se o
+﻿# =============================================================================
+# 9_rede_loopback.ps1  -  referência de rede no próprio anfitrião (sem VM)
+#   Sem virtualização não existe o caminho convidado<->anfitrião; mede-se o
 #   loopback do Windows (127.0.0.1) como limite superior da pilha de rede,
-#   com os mesmos testes TCP do rede.sh (10 repeticoes, 10 s, aquecimento).
-#   Correr no MODO VMWARE (hipervisor desligado), sem nenhuma VM ligada.
+#   com os mesmos testes TCP do rede.sh (10 repetições, 10 s, aquecimento).
+#   Correr no modo VMware (hipervisor desligado), sem nenhuma VM ligada.
 # Uso (PowerShell):
 #   powershell -ExecutionPolicy Bypass -File .\9_rede_loopback.ps1 -Iperf "C:\iperf3\iperf3.exe"
 # Gera a pasta resultados_rede_anfitriao_<data>\ (net_tcp_*_NN.json)
@@ -15,7 +15,7 @@ param(
   [string]$Tag = "anfitriao"
 )
 $ErrorActionPreference = "Stop"
-if (-not (Test-Path $Iperf)) { Write-Host "iperf3.exe nao encontrado em $Iperf" -ForegroundColor Red; exit 1 }
+if (-not (Test-Path $Iperf)) { Write-Host "iperf3.exe não encontrado em $Iperf" -ForegroundColor Red; exit 1 }
 
 $out = "resultados_rede_${Tag}_$(Get-Date -Format yyyyMMdd_HHmm)"
 New-Item -ItemType Directory -Force -Path $out | Out-Null
@@ -32,7 +32,7 @@ try {
   & $Iperf -c 127.0.0.1 -t 3 | Out-Null
   for ($i = 1; $i -le $N; $i++) {
     $nn = '{0:D2}' -f $i
-    Write-Host ">> Repeticao $i/$N" -ForegroundColor Cyan
+    Write-Host ">> Repetição $i/$N" -ForegroundColor Cyan
     & $Iperf -c 127.0.0.1 -t $T -J      | Out-File -Encoding ascii "$out\net_tcp_up_$nn.json";    Start-Sleep 2
     & $Iperf -c 127.0.0.1 -t $T -R -J   | Out-File -Encoding ascii "$out\net_tcp_down_$nn.json";  Start-Sleep 2
     & $Iperf -c 127.0.0.1 -t $T -P 4 -J | Out-File -Encoding ascii "$out\net_tcp_up_p4_$nn.json"; Start-Sleep 2
@@ -40,4 +40,4 @@ try {
 } finally {
   Stop-Process -Id $srv.Id -ErrorAction SilentlyContinue
 }
-Write-Host "Concluido -> $out" -ForegroundColor Green
+Write-Host "Concluído -> $out" -ForegroundColor Green

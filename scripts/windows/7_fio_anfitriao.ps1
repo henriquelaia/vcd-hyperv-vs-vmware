@@ -1,10 +1,10 @@
-# =============================================================================
-# 7_fio_anfitriao.ps1  -  referencia de DISCO no proprio anfitriao (sem VM)
-#   Corre os MESMOS 6 perfis do bench.sh com o fio para Windows, no NVMe/NTFS.
-#   --direct=1 no Windows abre o ficheiro sem a cache do sistema, por isso nao
-#   e preciso limpar a cache entre testes.
-#   Correr no MODO VMWARE (hipervisor desligado: Windows diretamente no hardware),
-#   sem nenhuma VM ligada, ligado a corrente, 10 min depois do arranque.
+﻿# =============================================================================
+# 7_fio_anfitriao.ps1  -  referência de disco no próprio anfitrião (sem VM)
+#   Corre os mesmos 6 perfis do bench.sh com o fio para Windows, no NVMe/NTFS.
+#   --direct=1 no Windows abre o ficheiro sem a cache do sistema, por isso não
+#   é preciso limpar a cache entre testes.
+#   Correr no modo VMware (hipervisor desligado: Windows diretamente no hardware),
+#   sem nenhuma VM ligada, ligado à corrente, 10 min depois do arranque.
 # Uso (PowerShell como Administrador):
 #   powershell -ExecutionPolicy Bypass -File .\7_fio_anfitriao.ps1 -Fio "C:\Program Files\fio\fio.exe"
 # Gera a pasta resultados_anfitriao_<data>\ (fio_*_NN.json), lida pelo parse_resultados.py
@@ -16,7 +16,7 @@ param(
   [string]$Tag = "anfitriao"
 )
 $ErrorActionPreference = "Stop"
-if (-not (Test-Path $Fio)) { Write-Host "fio.exe nao encontrado em $Fio" -ForegroundColor Red; exit 1 }
+if (-not (Test-Path $Fio)) { Write-Host "fio.exe não encontrado em $Fio" -ForegroundColor Red; exit 1 }
 
 New-Item -ItemType Directory -Force -Path $Dir | Out-Null
 $out = "resultados_${Tag}_$(Get-Date -Format yyyyMMdd_HHmm)"
@@ -50,7 +50,7 @@ Write-Host ">> Corrida de aquecimento (descartada)..." -ForegroundColor Cyan
 foreach ($t in $tests.Keys) { & $Fio @base @($tests[$t]) | Out-Null }
 
 for ($i = 1; $i -le $N; $i++) {
-  Write-Host ">> Repeticao $i/$N" -ForegroundColor Cyan
+  Write-Host ">> Repetição $i/$N" -ForegroundColor Cyan
   foreach ($t in $tests.Keys) {
     Start-Sleep -Seconds 5
     & $Fio @base @($tests[$t]) "--output=$out\$($t)_$('{0:D2}' -f $i).json" | Out-Null
@@ -58,4 +58,4 @@ for ($i = 1; $i -le $N; $i++) {
 }
 Remove-Item (Join-Path $Dir "fio_teste.dat") -ErrorAction SilentlyContinue
 "fim: $(Get-Date -Format s)" | Add-Content "$out\ambiente.txt"
-Write-Host "Concluido -> $out" -ForegroundColor Green
+Write-Host "Concluído -> $out" -ForegroundColor Green

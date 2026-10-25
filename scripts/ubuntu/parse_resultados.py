@@ -6,15 +6,15 @@ parse_resultados.py — converte as pastas criadas pelo bench.sh em CSV.
                                 resultados_rede_hyperv_* resultados_rede_vmware_* \
                                 resultados_rede_udp_hyperv_* resultados_rede_udp_vmware_*
 
-  Com a referência do anfitrião (a PRIMEIRA pasta define a referência):
+  Com a referência sem virtualização (a primeira pasta é a referência):
+    python3 parse_resultados.py resultados_nativo_semturbo_* resultados_hyperv_2* resultados_vmware_2*
     python3 parse_resultados.py resultados_anfitriao_* resultados_hyperv_2* resultados_vmware_2*
-    python3 parse_resultados.py resultados_7z_anfitriao_* resultados_7z_hyperv_* resultados_7z_vmware_*
     python3 parse_resultados.py resultados_rede_anfitriao_* resultados_rede_hyperv_* resultados_rede_vmware_*
 
 Gera:
   corridas.csv     — um valor por corrida
   resumo.csv       — média, desvio-padrão amostral, IC95% (t de Student), CV%
-  comparacao.csv   — Δ% de cada etiqueta face à PRIMEIRA pasta indicada
+  comparacao.csv   — Δ% de cada etiqueta face à primeira pasta indicada
 Só usa a biblioteca padrão do Python.
 """
 import csv, json, re, statistics as st, sys
@@ -35,18 +35,6 @@ def parse_sysbench(txt):
     if (v := g(r"avg:\s+([\d.]+)")):                       m["lat_media_ms"] = float(v)
     if (v := g(r"95th percentile:\s+([\d.]+)")):           m["lat_p95_ms"] = float(v)
     if (v := g(r"max:\s+([\d.]+)")):                       m["lat_max_ms"] = float(v)
-    return m
-
-def parse_7z(txt):
-    # linhas finais do "7z b": Avr (compressão | descompressão) e Tot; a última
-    # coluna de cada parte é o rating em MIPS
-    m = {}
-    ints = lambda s: [int(x) for x in re.findall(r"\d+", s)]
-    if (x := re.search(r"^Avr:(.*)\|(.*)$", txt, re.M)):
-        m["compressao_mips"] = ints(x[1])[-1]
-        m["descompressao_mips"] = ints(x[2])[-1]
-    if (x := re.search(r"^Tot:(.*)$", txt, re.M)):
-        m["total_mips"] = ints(x[1])[-1]
     return m
 
 def parse_iperf(data):
@@ -103,7 +91,7 @@ def parse_fio(data):
     return m
 
 def tag_of(d):
-    mm = re.match(r"resultados_(?:rede_udp_|rede_|7z_)?(.+?)_\d{8}_\d{4}$", Path(d).name)
+    mm = re.match(r"resultados_(?:rede_udp_|rede_)?(.+?)_\d{8}_\d{4}$", Path(d).name)
     return mm[1] if mm else Path(d).name.split("_")[1]
 
 def main(dirs):
@@ -120,8 +108,6 @@ def main(dirs):
                 vals = parse_json(f)
             elif test.startswith("net_ping"):
                 vals = parse_ping(f.read_text())
-            elif test.startswith("cpu7z"):
-                vals = parse_7z(f.read_text(errors="replace"))
             else:
                 vals = parse_sysbench(f.read_text())
             for k, v in vals.items():

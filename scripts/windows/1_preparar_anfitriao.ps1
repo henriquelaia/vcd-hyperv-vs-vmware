@@ -1,8 +1,8 @@
 ﻿# =============================================================================
-# 1_preparar_anfitriao.ps1  -  correr UMA vez, como Administrador
-#   - ativa o plano de energia "Alto desempenho"
-#   - exclui as pastas das VMs da analise em tempo real do Microsoft Defender
-#   - mostra o estado atual (para registares no relatorio)
+# 1_preparar_anfitriao.ps1  -  corre uma vez, como Administrador
+#   - ativa o plano de energia "Elevado desempenho"
+#   - exclui as pastas das VMs da análise em tempo real do Microsoft Defender
+#   - guarda o estado atual em estado_original.txt
 # Uso:
 #   powershell -ExecutionPolicy Bypass -File .\1_preparar_anfitriao.ps1 `
 #       -HyperVDir "C:\ProgramData\Microsoft\Windows\Virtual Hard Disks" `
@@ -14,17 +14,17 @@ param(
 )
 $ErrorActionPreference = "Continue"
 
-Write-Host "`n[1/3] Plano de energia -> Alto desempenho" -ForegroundColor Cyan
+Write-Host "`n[1/3] Plano de energia -> Elevado desempenho" -ForegroundColor Cyan
 powercfg /setactive SCHEME_MIN
 powercfg /getactivescheme
-# nunca suspender/hibernar ligado a corrente (os testes demoram ~80 min)
+# nunca suspender/hibernar ligado à corrente (os testes demoram cerca de 40 min)
 powercfg /change standby-timeout-ac 0
 powercfg /change hibernate-timeout-ac 0
 
-Write-Host "`nBitLocker (se Protection On: ter a chave de recuperacao a mao antes de mudar o bcdedit)" -ForegroundColor Cyan
+Write-Host "`nBitLocker (se Protection On: ter a chave de recuperação à mão antes de mudar o bcdedit)" -ForegroundColor Cyan
 manage-bde -status C: | Select-String "Protection Status|Estado da Prote"
 
-Write-Host "`n[2/3] Exclusoes do Microsoft Defender" -ForegroundColor Cyan
+Write-Host "`n[2/3] Exclusões do Microsoft Defender" -ForegroundColor Cyan
 Add-MpPreference -ExclusionPath $HyperVDir
 Add-MpPreference -ExclusionPath $VmwareDir
 (Get-MpPreference).ExclusionPath
@@ -39,4 +39,4 @@ $hvci = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Sc
   "vmware_dir=$VmwareDir"
 ) | Set-Content estado_original.txt
 Get-Content estado_original.txt
-Write-Host "`nFeito. Se for portatil: ligar a corrente e manter ligado durante TODOS os testes." -ForegroundColor Green
+Write-Host "`nFeito. Se for portátil: ligar à corrente e manter ligado durante TODOS os testes." -ForegroundColor Green

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
 # rede.sh — testes de rede convidado <-> anfitrião (iperf3 + ping)
-# Correr DENTRO da VM Ubuntu, com o servidor iperf3 a correr no Windows
-# (6_servidor_rede.ps1).
+# Corre dentro da máquina virtual Ubuntu, com o servidor iperf3 ligado no
+# Windows (6_servidor_rede.ps1).
 #
 #   uso:   chmod +x rede.sh
 #          ./rede.sh hyperv IP_DO_ANFITRIAO
@@ -13,7 +13,7 @@
 #     VMware  -> adaptador "VMware Network Adapter VMnet8"   (modo NAT)
 #
 #   variáveis opcionais: N=10 (repetições)  T=10 (segundos por teste iperf3)
-#   duração aproximada: ~9 minutos. No fim cria resultados_rede_<etiqueta>_<data>.tar.gz
+#   duração: cerca de 9 minutos. No fim cria resultados_rede_<etiqueta>_<data>.tar.gz
 # =============================================================================
 set -euo pipefail
 

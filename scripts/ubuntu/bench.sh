@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # bench.sh — bateria de benchmarks para o trabalho de VCD (UBI)
-# Correr DENTRO da máquina convidada Ubuntu (ou no Ubuntu nativo / live USB).
+# Corre dentro da máquina virtual Ubuntu ou no Ubuntu nativo (live USB).
 #
 #   uso:   chmod +x bench.sh
 #          ./bench.sh hyperv          # na VM Hyper-V
@@ -11,19 +11,17 @@
 #   variáveis opcionais:
 #          N=10            número de repetições medidas (por omissão 10)
 #          FIO_DIR=/mnt/x  pasta onde o fio cria o ficheiro de teste
-#                          (no live USB TEM de apontar para um disco real,
-#                           porque / é tmpfs em RAM!)
-#          SKIP_FIO=1      salta os testes de disco (ex.: Ubuntu live sem partição livre)
-#          ONLY_CPU=1      só corre os testes de CPU (ex.: experiência do escalonador)
+#                          (no live USB, / está em RAM)
+#          SKIP_FIO=1      não corre os testes de disco
+#          ONLY_CPU=1      só corre os testes de CPU
 #
-#   duração aproximada (perfil medio, predefinido): ~40 minutos. Não usar a máquina entretanto.
-#   No fim é criada a pasta  resultados_<etiqueta>_<data>/  -> enviar em .zip
+#   duração: cerca de 40 minutos (perfil medio).
+#   No fim é criada a pasta  resultados_<etiqueta>_<data>/  e o respetivo .tar.gz
 # =============================================================================
 set -euo pipefail
 
 TAG=${1:?"uso: ./bench.sh hyperv|vmware|nativo"}
-# PERFIL: medio (~40 min, PREDEFINIDO, o escolhido pelo grupo) | completo (~80 min) | rapido (~22 min)
-# Usar SEMPRE o mesmo perfil nos dois hipervisores!
+# perfil de duração: medio (predefinido), completo ou rapido
 PERFIL=${PERFIL:-medio}
 case "$PERFIL" in
   completo) N_DEF=10; T_SYS=30; T_FIO=30; T_RAMP=5 ;;
@@ -111,8 +109,7 @@ for t in "${SYSBENCH_TESTS[@]}"; do eval "${t#*|}" >/dev/null; done
 for t in "${FIO_TESTS[@]+"${FIO_TESTS[@]}"}"; do drop_caches; eval fio $FIO_BASE ${t#*|} >/dev/null; done
 
 # ---------------------------------------------------------------- medições ---
-# As repetições são intercaladas (cpu, mem, disco, cpu, mem, disco, …) para
-# que variações lentas do anfitrião não afetem só um dos testes.
+# em cada repetição correm CPU, memória e disco, por esta ordem
 for i in $(seq 1 "$N"); do
   echo ">> Repetição $i/$N"
   for t in "${SYSBENCH_TESTS[@]}"; do
