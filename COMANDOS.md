@@ -17,8 +17,8 @@ Todos foram executados exatamente como indicado, de forma automatizada pelos scr
 8. [Procedimento](#8-procedimento)
 9. [Execução automática com os scripts](#9-execução-automática-com-os-scripts)
 10. [Processamento dos resultados](#10-processamento-dos-resultados)
-11. [Referência: o anfitrião sem virtualização](#11-referência-o-anfitrião-sem-virtualização)
-12. [VMware com placa paravirtualizada vmxnet3](#12-vmware-com-placa-paravirtualizada-vmxnet3)
+11. [Referência: o sistema sem virtualização](#11-referência-o-sistema-sem-virtualização)
+12. [VMware com placa paravirtualizada vmxnet3 (opcional)](#12-vmware-com-placa-paravirtualizada-vmxnet3-opcional)
 
 ---
 
@@ -237,73 +237,69 @@ Os testes t de Welch estão calculados, com fórmulas, no ficheiro `resultados_v
 
 ---
 
-## 11. Referência: o anfitrião sem virtualização
+## 11. Referência: o sistema sem virtualização
 
-O enunciado pede que o *overhead* seja quantificado face a um sistema de referência, "por exemplo, o sistema hospedeiro". A referência é o **próprio Windows do portátil onde estão as VMs** (i5-9300H), a correr **diretamente no hardware**, sem nenhuma VM ligada. Usa-se, em cada teste, **a mesma ferramenta e os mesmos parâmetros** no anfitrião e nos convidados.
+O *overhead* de cada hipervisor foi quantificado face ao mesmo portátil **sem nenhuma máquina virtual**, com a mesma ferramenta e os mesmos parâmetros de cada subsistema. Como o `sysbench` 1.0 não tem versão nativa para Windows, há duas referências:
 
-| Subsistema | Anfitrião (Windows) | Convidados (Ubuntu) | Nota |
+| Subsistema | Referência | Como | Nota |
 |---|---|---|---|
-| Processador | `8_7z_anfitriao.ps1` | `bench7z.sh` | o `sysbench` 1.0 não tem versão nativa para Windows; usa-se o benchmark do 7-Zip, igual nos dois sistemas |
-| Memória | — | — | sem ferramenta equivalente no Windows; referência medida no Ubuntu nativo (11.5) |
-| Disco | `7_fio_anfitriao.ps1` | `bench.sh` (já feito) | `fio`, os mesmos 6 perfis, `direct=1` |
-| Rede | `9_rede_loopback.ps1` | `rede.sh` (já feito) | *loopback* 127.0.0.1 como limite superior da pilha |
+| Processador e memória | Ubuntu 26.04.1 nativo (*live* USB) | `nativo_pen.sh` → `bench.sh` com `SKIP_FIO=1` | o mesmo `sysbench` 1.0.20 das VMs; turbo desligado (11.2) |
+| Disco | Windows anfitrião, hipervisor desligado | `7_fio_anfitriao.ps1` | `fio` 3.41, os mesmos 6 perfis, `windowsaio`, `direct=1` |
+| Rede | Windows anfitrião, *loopback* 127.0.0.1 | `9_rede_loopback.ps1` | `iperf3` 3.22; limite superior da pilha do anfitrião (indicativo) |
 
-### 11.1 Condições
-- Anfitrião em **modo VMware** (`3_modo_vmware.ps1` + reinício): o hipervisor fica desligado e o Windows corre diretamente no hardware. Confirmar com `4_verificar_estado.ps1` (`Hipervisor presente: False`). No modo Hyper-V, o Windows seria ele próprio uma partição virtualizada.
-- **Nenhuma VM ligada**, aplicações fechadas, ligado à corrente, 10 minutos depois do arranque.
-- **7-Zip: a mesma versão no Windows e nas VMs** (de [7-zip.org](https://www.7-zip.org): instalador x64 para Windows e `7zXXXX-linux-x64.tar.xz` para Linux).
+### 11.1 Windows anfitrião (disco e rede)
 
-### 11.2 Anfitrião (PowerShell, na pasta dos scripts)
+Condições: anfitrião em **modo VMware** (`3_modo_vmware.ps1` + reinício), confirmado com `4_verificar_estado.ps1` (`Hipervisor presente: False`); nenhuma VM ligada; aplicações fechadas; plano "Elevado desempenho"; ligado à corrente; 10 minutos depois do arranque.
+
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\8_7z_anfitriao.ps1   -SevenZip "C:\Program Files\7-Zip\7z.exe"   # ~10 min
-powershell -ExecutionPolicy Bypass -File .\7_fio_anfitriao.ps1  -Fio "C:\Program Files\fio\fio.exe"         # ~25 min
-powershell -ExecutionPolicy Bypass -File .\9_rede_loopback.ps1  -Iperf "C:\iperf3\iperf3.exe"               # ~7 min
+# PowerShell como administrador, na pasta scripts\windows
+powershell -ExecutionPolicy Bypass -File .\7_fio_anfitriao.ps1 -Fio "C:\Program Files\fio\fio.exe" -Dir C:\vcd\fio_teste   # ~25 min
+powershell -ExecutionPolicy Bypass -File .\9_rede_loopback.ps1 -Iperf "C:\iperf3\iperf3.exe"                              # ~7 min
 ```
-O `8_7z_anfitriao.ps1` prende os 2 *threads* a dois núcleos físicos diferentes (afinidade `0x5`), como os 2 vCPU sem SMT das VMs.
 
-### 11.3 Convidados (só o processador falta medir com o 7-Zip)
-```bash
-wget https://www.7-zip.org/a/7zXXXX-linux-x64.tar.xz     # XXXX = a mesma versão do Windows
-mkdir -p ~/7z && tar xf 7zXXXX-linux-x64.tar.xz -C ~/7z
-chmod +x bench7z.sh
-./bench7z.sh hyperv      # na VM Hyper-V, anfitrião em modo Hyper-V   (~10 min)
-./bench7z.sh vmware      # na VM VMware,  anfitrião em modo VMware   (~10 min)
+Comandos executados pelos scripts (N = 10, com aquecimento):
+```powershell
+# disco: os 6 perfis da secção 6, com estas opções base
+fio --ioengine=windowsaio --direct=1 --thread --filename=C:\vcd\fio_teste\fio_teste.dat --size=4G `
+    --numjobs=1 --time_based --runtime=15 --ramp_time=3 --group_reporting --output-format=json ...
+# rede (servidor iperf3 -s noutra janela)
+iperf3 -c 127.0.0.1 -t 10 -J
+iperf3 -c 127.0.0.1 -t 10 -R -J
+iperf3 -c 127.0.0.1 -t 10 -P 4 -J
 ```
-Comandos executados: `7z b -md22 -mmt1` e `7z b -md22 -mmt2` (dicionário fixo de 4 MiB, para que o tamanho não dependa da RAM de cada sistema). Confirmar que a saída só tem linhas `22:`.
 
-### 11.4 Processamento (a PRIMEIRA pasta é a referência)
-```bash
-python3 parse_resultados.py resultados_7z_anfitriao_*   resultados_7z_hyperv_*   resultados_7z_vmware_*
-python3 parse_resultados.py resultados_anfitriao_*      resultados_hyperv_2*     resultados_vmware_2*
-python3 parse_resultados.py resultados_rede_anfitriao_* resultados_rede_hyperv_* resultados_rede_vmware_*
-```
-Correr cada linha numa pasta diferente (cada execução reescreve os CSV). O `comparacao.csv` passa a dar o *overhead* de cada hipervisor face ao anfitrião.
+### 11.2 Ubuntu nativo em *live* USB (processador e memória)
 
-### 11.5 Referência Linux nativa (Ubuntu 26.04 em live USB)
+O mesmo portátil arranca o Ubuntu 26.04.1 Desktop a partir de uma pen (modo "Experimentar", sem instalar nada), diretamente no hardware. Sem disco: no *live* USB a raiz está em RAM.
 
-Complementa a referência Windows. O mesmo portátil arranca o Ubuntu 26.04.1 Desktop a partir de uma pen (modo "Experimentar", sem instalar nada), diretamente no hardware. Assim, o processador e a memória são medidos com **as mesmas ferramentas, o mesmo SO e o mesmo *kernel*** das VMs, e passa a haver referência para a memória.
-
-- **Sem disco:** no live USB a raiz está em RAM, e um disco externo por USB não seria o SSD interno das VMs. O disco fica com a referência Windows (11.2).
-- Os 2 *threads* ficam presos a 2 núcleos físicos diferentes (`taskset`), como no Windows (afinidade `0x5`) e como os 2 vCPU sem SMT.
-- Pen de 8 GB ou mais, gravada com o balenaEtcher. Precisa de Internet (instala o `sysbench` e descarrega o 7-Zip).
+**Frequência.** Medições no Windows anfitrião mostraram que este corre sempre a ≈2,35 GHz sob carga, sem turbo, em todos os planos de energia; foi essa a frequência a que correram as VMs. O Ubuntu nativo, com turbo, chega a ≈4 GHz (+67–71% no processador), o que mediria a frequência e não a virtualização. Por isso, a referência usada desliga o turbo (máximo 2400 MHz):
 
 ```bash
-# no Ubuntu da pen, na pasta scripts/ubuntu do repositório (Code > Download ZIP)
-bash nativo_pen.sh 2501        # 2501 = a mesma versão do 7-Zip do Windows   (~40 min)
+# 1) modo de energia "Desempenho" (Definições > Energia; ou: powerprofilesctl set performance)
+# 2) desligar o turbo e confirmar
+echo 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo
+lscpu -e        # MAXMHZ tem de ser 2400
+# 3) correr a bateria (na pasta scripts/ubuntu do repositório)
+sudo bash nativo_pen.sh        # ~25 min
 ```
-O script corre `SKIP_FIO=1 ./bench.sh nativo` e `./bench7z.sh nativo`. **Tudo fica em RAM**: os `.tar.gz` têm de ser copiados para fora antes de desligar.
 
-Processamento (a primeira pasta é a referência):
+O `nativo_pen.sh` impede a suspensão, escolhe dois núcleos físicos diferentes, guarda `lscpu -e` em `info_cpu_nativo.txt`, ativa o perfil "performance" (se existir) e corre `SKIP_FIO=1 taskset -c <2 núcleos> ./bench.sh nativo`. **Tudo fica em RAM**: copiar a pasta de resultados para fora antes de desligar.
+
+Pastas de resultados: `resultados_nativo_semturbo_*` (referência, sem turbo) e `resultados_nativo_turbo_*` (só registo do efeito da frequência).
+
+### 11.3 Processamento (a PRIMEIRA pasta é a referência)
 ```bash
-python3 parse_resultados.py resultados_nativo_*        resultados_hyperv_2*    resultados_vmware_2*
-python3 parse_resultados.py resultados_7z_nativo_*     resultados_7z_hyperv_*  resultados_7z_vmware_*
-python3 parse_resultados.py resultados_7z_anfitriao_*  resultados_7z_nativo_*   # efeito do SO (Windows vs. Linux)
+python3 parse_resultados.py resultados_nativo_semturbo_* resultados_hyperv_2* resultados_vmware_2*        # CPU e memória
+python3 parse_resultados.py resultados_anfitriao_*       resultados_hyperv_2* resultados_vmware_2*        # disco
+python3 parse_resultados.py resultados_rede_anfitriao_*  resultados_rede_hyperv_* resultados_rede_vmware_* # rede
 ```
-Com as duas referências separa-se o efeito do SO (Windows face a Linux nativo) do efeito da virtualização (Linux nativo face às VMs).
+Correr cada linha numa pasta diferente (cada execução reescreve os CSV). O `comparacao.csv` dá o *overhead* de cada hipervisor face à referência. No `resultados_vcd.xlsx`, a folha **Overhead nativo** calcula o mesmo com fórmulas e testes t de Welch.
 
 ---
 
-## 12. VMware com placa paravirtualizada vmxnet3
+## 12. VMware com placa paravirtualizada vmxnet3 (opcional)
+
+> Não executado neste trabalho (o relatório usa a configuração predefinida, `e1000`). Fica como procedimento para trabalho futuro.
 
 Testa a explicação do relatório: a diferença de rede deve-se à placa emulada `e1000`.
 

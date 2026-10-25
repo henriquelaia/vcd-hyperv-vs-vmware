@@ -1,0 +1,137 @@
+== etiqueta: nativo   data: 2026-10-24T20:41:33+00:00   N=10   perfil=medio (sysbench 10s, fio 15s+3s)
+== uname
+Linux ubuntu 7.0.0-30-generic #30-Ubuntu SMP PREEMPT_DYNAMIC Fri Jul 31 18:22:54 UTC 2026 x86_64 GNU/Linux
+== os-release
+PRETTY_NAME="Ubuntu 26.04.1 LTS"
+NAME="Ubuntu"
+VERSION_ID="26.04"
+VERSION="26.04.1 LTS (Resolute Raccoon)"
+VERSION_CODENAME=resolute
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=resolute
+LOGO=ubuntu-logo
+== virtualizacao
+none
+== lscpu
+Architecture:                            x86_64
+CPU op-mode(s):                          32-bit, 64-bit
+Address sizes:                           39 bits physical, 48 bits virtual
+Byte Order:                              Little Endian
+CPU(s):                                  8
+On-line CPU(s) list:                     0-7
+Vendor ID:                               GenuineIntel
+Model name:                              Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz
+CPU family:                              6
+Model:                                   158
+Thread(s) per core:                      2
+Core(s) per socket:                      4
+Socket(s):                               1
+Stepping:                                10
+CPU(s) scaling MHz:                      99%
+CPU max MHz:                             4100.0000
+CPU min MHz:                             800.0000
+BogoMIPS:                                4800.00
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb pti ssbd ibrs ibpb stibp tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp vnmi md_clear flush_l1d arch_capabilities
+Virtualization:                          VT-x
+L1d cache:                               128 KiB (4 instances)
+L1i cache:                               128 KiB (4 instances)
+L2 cache:                                1 MiB (4 instances)
+L3 cache:                                8 MiB (1 instance)
+NUMA node(s):                            1
+NUMA node0 CPU(s):                       0-7
+Vulnerability Gather data sampling:      Vulnerable
+Vulnerability Ghostwrite:                Not affected
+Vulnerability Indirect target selection: Not affected
+Vulnerability Itlb multihit:             KVM: Mitigation: Split huge pages
+Vulnerability L1tf:                      Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds:                       Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown:                  Mitigation; PTI
+Vulnerability Mmio stale data:           Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Old microcode:             Not affected
+Vulnerability Reg file data sampling:    Not affected
+Vulnerability Retbleed:                  Mitigation; IBRS
+Vulnerability Spec rstack overflow:      Not affected
+Vulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:                Mitigation; IBRS; IBPB conditional; STIBP conditional; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected
+Vulnerability Srbds:                     Mitigation; Microcode
+Vulnerability Tsa:                       Not affected
+Vulnerability Tsx async abort:           Not affected
+Vulnerability Vmscape:                   Mitigation; IBPB before exit to userspace
+== memoria
+               total        used        free      shared  buff/cache   available
+Mem:           15862        2991        3637         505        9772       12871
+Swap:              0           0           0
+== discos
+NAME          SIZE TYPE FSTYPE   MOUNTPOINT                          ROTA MODEL
+loop0         3.2G loop squashfs /rofs                                  1 
+loop1       562.7M loop squashfs                                        1 
+loop2       756.4M loop squashfs                                        1 
+loop3        66.8M loop squashfs /snap/core24/1643                      0 
+loop4          20M loop squashfs /snap/desktop-security-center/151      0 
+loop5       260.3M loop squashfs /snap/firefox/8763                     0 
+loop6           4K loop squashfs /snap/bare/5                           0 
+loop7        16.5M loop squashfs /snap/firmware-updater/226             0 
+loop8       614.5M loop squashfs /snap/gnome-46-2404/164                0 
+loop9        91.7M loop squashfs /snap/gtk-common-themes/1535           0 
+loop10        1.5M loop squashfs /snap/hwctl/123                        0 
+loop11        402M loop squashfs /snap/mesa-2404/1839                   0 
+loop12       18.8M loop squashfs /snap/prompting-client/222             0 
+loop13       11.8M loop squashfs /snap/snap-store/1390                  0 
+loop14      221.1M loop squashfs /snap/thunderbird/1228                 0 
+loop15      111.4M loop squashfs /snap/ubuntu-desktop-bootstrap/665     0 
+loop16       50.1M loop squashfs /snap/snapd/27710                      0 
+loop17        828K loop squashfs /snap/snapd-desktop-integration/391    0 
+sda          28.6G disk iso9660                                         1 SanDisk 3.2Gen1
+├─sda1          6G part iso9660  /cdrom                                 1 
+├─sda2          5M part vfat                                            1 
+├─sda3        300K part                                                 1 
+└─sda4       22.6G part ext4     /var/crash                             1 
+nvme0n1     953.9G disk                                                 0 SAMSUNG MZVLB1T0HALR-000H1
+├─nvme0n1p1   260M part vfat                                            0 
+├─nvme0n1p2    16M part                                                 0 
+├─nvme0n1p3 952.6G part ntfs                                            0 
+└─nvme0n1p4  1023M part ntfs                                            0 
+== fs do teste fio
+Filesystem     Type    1K-blocks   Used Available Use% Mounted on
+/cow           overlay   8121584 441552   7680032   6% /
+== escalonador I/O
+/sys/block/loop0/queue/scheduler: [none] mq-deadline 
+/sys/block/loop1/queue/scheduler: [none] mq-deadline 
+/sys/block/loop10/queue/scheduler: [none] mq-deadline 
+/sys/block/loop11/queue/scheduler: [none] mq-deadline 
+/sys/block/loop12/queue/scheduler: [none] mq-deadline 
+/sys/block/loop13/queue/scheduler: [none] mq-deadline 
+/sys/block/loop14/queue/scheduler: [none] mq-deadline 
+/sys/block/loop15/queue/scheduler: [none] mq-deadline 
+/sys/block/loop16/queue/scheduler: [none] mq-deadline 
+/sys/block/loop17/queue/scheduler: [none] mq-deadline 
+/sys/block/loop18/queue/scheduler: [none] mq-deadline 
+/sys/block/loop2/queue/scheduler: [none] mq-deadline 
+/sys/block/loop3/queue/scheduler: [none] mq-deadline 
+/sys/block/loop4/queue/scheduler: [none] mq-deadline 
+/sys/block/loop5/queue/scheduler: [none] mq-deadline 
+/sys/block/loop6/queue/scheduler: [none] mq-deadline 
+/sys/block/loop7/queue/scheduler: [none] mq-deadline 
+/sys/block/loop8/queue/scheduler: [none] mq-deadline 
+/sys/block/loop9/queue/scheduler: [none] mq-deadline 
+/sys/block/nvme0n1/queue/scheduler: [none] mq-deadline 
+/sys/block/sda/queue/scheduler: none [mq-deadline] 
+== modulos virt
+nvme                   69632  0
+nvme_core             241664  1 nvme
+nvme_keyring           20480  1 nvme_core
+nvme_auth              28672  1 nvme_core
+hkdf                   12288  1 nvme_auth
+== governor CPU
+powersave
+== versoes
+sysbench 1.0.20
+fio-3.41
+== open-vm-tools
+fim: 2026-10-24T20:57:29+00:00
